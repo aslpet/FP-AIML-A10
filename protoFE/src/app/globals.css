@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #eef2ff 0%, rgba(238, 242, 255, 0) 55%),
+    #fbfbf9;
+  color: #0f172a;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tile "Wordle" intensity helpers driven by inline custom property --tile */
+.tile {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 6px;
+  background: #e8e8e4;
+  transition: transform 0.18s ease;
+}
+.tile--on {
+  background: var(--tile, #4f46e5);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* thin scrollbar for transcript */
+.scroll-slim::-webkit-scrollbar {
+  width: 8px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: #d4d4d0;
+  border-radius: 8px;
+}
