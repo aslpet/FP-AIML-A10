@@ -148,6 +148,7 @@ async function processCategory(
   }
 
   // --- Jalur 2: Antrian (LIFO, TTL 3 hari) ---
+  console.log(`[pipeline] ${category}: no fresh candidates, trying queue`);
   const queuedId = await takeFromQueue(category);
   if (queuedId) {
     await promote(queuedId, category);
@@ -155,6 +156,7 @@ async function processCategory(
   }
 
   // --- Jalur 3: Fallback statis ---
+  console.log(`[pipeline] ${category}: queue empty, using fallback`);
   const fallbackId = await insertFallbackMotion(category);
   if (fallbackId) {
     await promote(fallbackId, category);

@@ -37,18 +37,20 @@ export async function promote(
   // Cek beban flag — jika true dan stance berpendirian, pilih posisi aman
   const { data: motion } = await admin()
     .from("daily_motion")
-    .select("safety_flags")
+    .select("safety_flags, motion_text")
     .eq("motion_id", motionId)
     .single();
 
   const flags = (motion?.safety_flags ?? {}) as Record<string, unknown>;
+  const motionText = motion?.motion_text ?? "";
   const hasBeban = flags.beban === true;
   let aiPosition: string | null = null;
 
   if (stance === "berpendirian") {
+    const side = randomPick(["Mendukung", "Menolak"]);
     aiPosition = hasBeban
-      ? "Posisi AI dipilih tidak menyerang kondisi personal kelompok terkait (sadar-beban)"
-      : "Posisi akan ditentukan oleh sistem sebagai lawan konsisten";
+      ? `${side} mosi ini dari sisi sistemik (biaya/implementasi/trade-off), tanpa menyerang kondisi personal kelompok terkait. Mosi: "${motionText}"`
+      : `${side} mosi ini. Mosi: "${motionText}"`;
   }
 
   // Update mosi jadi live dengan persona

@@ -42,7 +42,10 @@ export async function rotateCategories(): Promise<CategoryId[]> {
   // Pagar keadilan: WAJIB sertakan kategori yang absen ≥2 hari (FR-3)
   const mustInclude = ALL_CATEGORIES.filter((c) => daysSinceActive(c) >= 2);
 
-  for (const cat of mustInclude) {
+  // Acak agar distribusi adil — jika semua absen ≥2 hari, tidak selalu 4 pertama yang terpilih
+  const shuffled = [...mustInclude].sort(() => Math.random() - 0.5);
+
+  for (const cat of shuffled) {
     if (selected.length < target) {
       selected.push(cat);
     }
@@ -50,9 +53,9 @@ export async function rotateCategories(): Promise<CategoryId[]> {
 
   // Sisa slot diisi acak dari kategori yang belum terpilih
   const remaining = ALL_CATEGORIES.filter((c) => !selected.includes(c));
-  const shuffled = remaining.sort(() => Math.random() - 0.5);
+  const shuffledRemaining = remaining.sort(() => Math.random() - 0.5);
 
-  for (const cat of shuffled) {
+  for (const cat of shuffledRemaining) {
     if (selected.length >= target) break;
     selected.push(cat);
   }

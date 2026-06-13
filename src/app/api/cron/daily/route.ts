@@ -10,7 +10,6 @@ export async function GET(request: Request) {
   const vercelCron = request.headers.get("x-vercel-cron-secret");
   const expected = `Bearer ${config.cronSecret}`;
 
-  // Menerima Authorization header (curl/manual) ATAU x-vercel-cron-secret (Vercel Cron)
   const authorized =
     (config.cronSecret && auth === expected) ||
     (config.cronSecret && vercelCron === config.cronSecret);

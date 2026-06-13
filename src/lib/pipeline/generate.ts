@@ -22,7 +22,7 @@ export async function generateCandidates(
 ): Promise<LlmGenerateResponse> {
   const model = getGenAI().getGenerativeModel({
     model: config.gemini.modelPipeline,
-    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+    generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
   });
 
   const prompt = buildGeneratePrompt(article);
@@ -147,19 +147,40 @@ function sleep(ms: number): Promise<void> {
 }
 
 function parseResponse(text: string): LlmGenerateResponse {
-  // Bersihkan markdown fence
-  let cleaned = text.trim();
-  if (cleaned.startsWith("```")) {
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const raw = text.trim();
+  console.log("[generate] Raw response (first 500 chars):", raw.slice(0, 500));
+
+  // Strategy 1: strip semua markdown fence + whitespace
+  let cleaned = raw
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/i, "")
+    .trim();
+
+  // Strategy 2: kalau masih ada fence di tengah, coba ekstrak JSON object
+  if (!cleaned.startsWith("{") && !cleaned.startsWith("[")) {
+    const match = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if (match) cleaned = match[0];
   }
 
   try {
     const parsed = JSON.parse(cleaned);
-    return {
-      candidates: Array.isArray(parsed.candidates) ? parsed.candidates : [],
-    };
+    if (Array.isArray(parsed)) {
+      return { candidates: parsed };
+    }
+    if (parsed && typeof parsed === "object") {
+      if (Array.isArray(parsed.candidates)) {
+        return { candidates: parsed.candidates };
+      }
+      // Response punya reject di top-level tanpa kandidat
+      if (parsed.reject) {
+        console.log(`[generate] Article rejected: ${parsed.reject}`);
+        return { candidates: [] };
+      }
+    }
   } catch {
-    console.warn("[generate] Failed to parse LLM JSON, returning empty");
+    console.warn("[generate] JSON parse failed, last 100 chars:", cleaned.slice(-100));
     return { candidates: [] };
   }
+
+  return { candidates: [] };
 }
