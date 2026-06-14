@@ -6,10 +6,10 @@ import { AnimatePresence } from "framer-motion";
 import { CATEGORIES } from "@/lib/categories";
 import { MOTION_BY_CATEGORY } from "@/lib/mock/motions";
 import { getScript } from "@/lib/mock/debate";
-import { buildResult } from "@/lib/mock/result";
-import { fakeDelay } from "@/lib/util";
+import { aggregate, computeVerdict, uid, todayWIB } from "@/lib/util";
+import { callDebateAPI, callEvaluateAPI } from "@/lib/api";
 import { useProto } from "@/lib/store";
-import type { CategoryId, Turn } from "@/lib/types";
+import type { CategoryId, Turn, SessionResult, Scores, DimensionId } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { CategoryChip } from "@/components/CategoryChip";
 import { ChatBubble } from "@/components/arena/ChatBubble";
@@ -29,7 +29,7 @@ function Arena() {
   const { ready, finishSession } = useProto();
 
   const motion = MOTION_BY_CATEGORY[cat];
-  const script = getScript(motion?.motion_id ?? "");
+  const script = getScript(motion?.motion_id ?? ""); // fallback
 
   const [turns, setTurns] = useState<Turn[]>([]);
   const [round, setRound] = useState(1);
@@ -37,20 +37,50 @@ function Arena() {
   const [resultId, setResultId] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [useLive, setUseLive] = useState(true); // live Gemini mode
   const userArgs = useRef<string[]>([]);
+  const aiMessages = useRef<string[]>([]);
   const started = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Pembuka AI (sekali).
+  // Build conversation history string for context
+  function buildHistory(): string {
+    return turns
+      .map((t) => `[${t.role === "ai" ? "LAWAN" : "USER"}]: ${t.content}`)
+      .join("\n");
+  }
+
+  // Pembuka AI — live Gemini or fallback to canned.
   useEffect(() => {
     if (!ready || started.current || !motion) return;
     started.current = true;
+
     (async () => {
-      await fakeDelay(1100);
-      setTurns([{ role: "ai", content: script.opening, round: 0 }]);
-      setPhase("await");
+      try {
+        const data = await callDebateAPI(
+          motion.motion_text,
+          motion.context,
+        );
+
+        if (data.error && !data.ai_message) {
+          throw new Error(data.error);
+        }
+
+        const msg = data.ai_message;
+        aiMessages.current.push(msg);
+        setTurns([{ role: "ai", content: msg, round: 0 }]);
+        setPhase("await");
+      } catch {
+        // Fallback ke mock
+        console.warn("[arena] Gemini unavailable, using mock scripts");
+        setUseLive(false);
+        setTurns([{ role: "ai", content: script.opening, round: 0 }]);
+        aiMessages.current.push(script.opening);
+        setPhase("await");
+      }
     })();
-  }, [ready, motion, script.opening]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, motion]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,24 +95,139 @@ function Arena() {
     userArgs.current.push(text);
     setTurns((t) => [...t, { role: "user", content: text, round }]);
     setPhase("thinking");
-    await fakeDelay(1300);
 
     if (round < 3) {
+      // Ronde 1-2: get AI rebuttal
+      let aiMsg: string;
+
+      if (useLive) {
+        try {
+          const history = buildHistory() + `\n[USER]: ${text}`;
+          const data = await callDebateAPI(
+            motion!.motion_text,
+            motion!.context,
+            text,
+            history,
+          );
+
+          if (data.error && !data.ai_message) throw new Error(data.error);
+          aiMsg = data.ai_message;
+        } catch {
+          // Fallback to mock
+          aiMsg = script.rebuttals[round - 1];
+          showToast("Gemini gagal, pakai fallback");
+        }
+      } else {
+        aiMsg = script.rebuttals[round - 1];
+      }
+
+      aiMessages.current.push(aiMsg);
       setTurns((t) => [
         ...t,
-        { role: "ai", content: script.rebuttals[round - 1], round },
+        { role: "ai", content: aiMsg, round },
       ]);
       setRound((r) => r + 1);
       setPhase("await");
     } else {
-      // Ronde 3 → penutup + evaluasi.
-      setTurns((t) => [...t, { role: "ai", content: script.closing, round: 3 }]);
-      const result = buildResult(
-        motion.motion_id,
-        cat,
-        userArgs.current,
-        isBonus,
-      );
+      // Ronde 3 → AI closing + evaluasi
+
+      // Get AI closing message
+      let closingMsg: string;
+      if (useLive) {
+        try {
+          const history = buildHistory() + `\n[USER]: ${text}`;
+          const data = await callDebateAPI(
+            motion!.motion_text,
+            motion!.context,
+            text,
+            history,
+          );
+          if (data.error && !data.ai_message) throw new Error(data.error);
+          closingMsg = data.ai_message;
+        } catch {
+          closingMsg = script.closing;
+        }
+      } else {
+        closingMsg = script.closing;
+      }
+
+      aiMessages.current.push(closingMsg);
+      setTurns((t) => [...t, { role: "ai", content: closingMsg, round: 3 }]);
+
+      // Evaluate with Gemini
+      let scores: Scores;
+      let rationale: Record<DimensionId, string>;
+      let feedback: string;
+      let verdict: "bertahan" | "imbang" | "runtuh";
+      let totalScore: number;
+
+      if (useLive) {
+        try {
+          const aiSummary = aiMessages.current.join(" | ");
+          const evalData = await callEvaluateAPI(
+            motion!.motion_text,
+            motion!.context,
+            userArgs.current as [string, string, string],
+            aiSummary,
+          );
+
+          if (evalData.error) throw new Error(evalData.error);
+
+          scores = {
+            penalaran: evalData.penalaran,
+            relevansi: evalData.relevansi,
+            responsiveness: evalData.responsiveness,
+            kejelasan: evalData.kejelasan,
+          };
+          rationale = evalData.rationale;
+          feedback = evalData.feedback;
+          totalScore = aggregate(scores);
+          verdict = computeVerdict(scores);
+        } catch {
+          // Fallback to mock evaluation
+          const { buildResult } = await import("@/lib/mock/result");
+          const mockResult = buildResult(
+            motion!.motion_id,
+            cat,
+            userArgs.current,
+            isBonus,
+          );
+          scores = mockResult.scores;
+          rationale = mockResult.rationale;
+          feedback = mockResult.feedback;
+          totalScore = mockResult.total_score;
+          verdict = mockResult.verdict;
+          showToast("Evaluasi Gemini gagal, pakai fallback");
+        }
+      } else {
+        // Full mock
+        const { buildResult } = await import("@/lib/mock/result");
+        const mockResult = buildResult(
+          motion!.motion_id,
+          cat,
+          userArgs.current,
+          isBonus,
+        );
+        scores = mockResult.scores;
+        rationale = mockResult.rationale;
+        feedback = mockResult.feedback;
+        totalScore = mockResult.total_score;
+        verdict = mockResult.verdict;
+      }
+
+      const result: SessionResult = {
+        session_id: uid(),
+        play_date: todayWIB(),
+        category: cat,
+        motion_text: motion!.motion_text,
+        scores,
+        rationale,
+        total_score: totalScore,
+        feedback,
+        verdict,
+        is_bonus: isBonus,
+      };
+
       finishSession(result);
       setResultId(result.session_id);
       setPhase("done");
@@ -104,10 +249,18 @@ function Arena() {
         <div className="mx-auto max-w-xl px-4 py-3">
           <div className="flex items-center justify-between">
             <CategoryChip category={cat} size="sm" />
-            <RoundProgress current={phase === "done" ? 3 : round} />
+            <div className="flex items-center gap-3">
+              {useLive && (
+                <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  LIVE
+                </span>
+              )}
+              <RoundProgress current={phase === "done" ? 3 : round} />
+            </div>
           </div>
           <p className="mt-2 line-clamp-2 text-sm font-semibold text-ink/70">
-            “{motion.motion_text}”
+            &ldquo;{motion.motion_text}&rdquo;
           </p>
         </div>
       </header>
@@ -135,7 +288,9 @@ function Arena() {
           )}
           {phase === "thinking" && turns.length > 0 && (
             <div className="rounded-2xl border border-ink/10 bg-white/60 p-4 text-center text-sm text-ink/40">
-              Lawan sedang menyusun argumen…
+              {useLive
+                ? "Lawan sedang menyusun argumen via Gemini…"
+                : "Lawan sedang menyusun argumen…"}
             </div>
           )}
           {phase === "done" && resultId && (

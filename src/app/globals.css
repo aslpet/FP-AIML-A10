@@ -1,30 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
 body {
-  background: radial-gradient(ellipse at 50% -20%, #e0e7ff 0%, #fbfbf9 60%);
-  color: #0f172a;
-  min-height: 100dvh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #000000;
+  color: #f4f4f5; /* zinc-100 */
+  line-height: 1.6;
+  min-height: 100vh;
 }
 
-.tile {
-  width: 24px;
-  height: 24px;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.4);
   border-radius: 4px;
-  background: #e2e8f0;
-  transition: background 0.3s ease;
 }
 
-.tile--on {
-  background: var(--tile);
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.6);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
+/* Smooth transitions */
+.smooth-transition {
+  transition: all 0.3s ease-out;
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+.glow-secondary {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+}
+
+.glow-accent {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+.hover-glow-primary:hover {
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow-secondary:hover {
+  box-shadow: 0 0 30px rgba(6, 182, 212, 0.5);
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow-accent:hover {
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+  transition: box-shadow 0.3s ease;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass panels */
+.glass {
+  background: rgba(9, 9, 11, 0.75); /* zinc-950 with opacity */
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(39, 39, 42, 0.5); /* zinc-800 with opacity */
 }

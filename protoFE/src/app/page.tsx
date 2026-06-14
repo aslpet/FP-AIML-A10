@@ -107,9 +107,11 @@ export default function TodayPage() {
               >
                 Mulai Debat ⚔️
               </Button>
-              <p className="mt-2 text-center text-xs text-ink/40">
-                3 ronde · skor di akhir · lawan tak bisa dipilih
-              </p>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                <span className="pill">⚔️ 3 ronde</span>
+                <span className="pill">📊 skor di akhir</span>
+                <span className="pill">🎲 lawan tak bisa dipilih</span>
+              </div>
             </motion.div>
           </section>
         )}

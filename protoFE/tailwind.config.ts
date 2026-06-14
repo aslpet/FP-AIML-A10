@@ -10,6 +10,7 @@ const config: Config = {
         brand: {
           DEFAULT: "#4f46e5",
           soft: "#eef2ff",
+          deep: "#3730a3",
         },
       },
       fontFamily: {
@@ -27,6 +28,7 @@ const config: Config = {
       boxShadow: {
         card: "0 1px 2px rgba(15,23,42,0.04), 0 8px 24px -12px rgba(15,23,42,0.18)",
         pop: "0 12px 40px -12px rgba(15,23,42,0.30)",
+        glow: "0 0 24px -4px rgba(79,70,229,0.25)",
       },
       keyframes: {
         "fade-up": {
@@ -41,11 +43,16 @@ const config: Config = {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "pulse-soft": {
+          "0%,100%": { opacity: "1" },
+          "50%": { opacity: "0.7" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.4s ease-out both",
         flame: "flame 1.6s ease-in-out infinite",
         shimmer: "shimmer 1.4s linear infinite",
+        "pulse-soft": "pulse-soft 2.4s ease-in-out infinite",
       },
     },
   },
