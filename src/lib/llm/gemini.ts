@@ -7,17 +7,18 @@ import { config } from "@/lib/config";
  * Acuan: TRD-00 §5 (disiplin token), NFR-13 (JSON ketat), NFR-14 (retry-backoff)
  */
 
-let _genAI: GoogleGenerativeAI | null = null;
+const _clients = new Map<string, GoogleGenerativeAI>();
 
-function getGenAI(): GoogleGenerativeAI {
-  if (!_genAI) {
-    _genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+function getGenAI(apiKey: string): GoogleGenerativeAI {
+  if (!_clients.has(apiKey)) {
+    _clients.set(apiKey, new GoogleGenerativeAI(apiKey));
   }
-  return _genAI;
+  return _clients.get(apiKey)!;
 }
 
 export interface LlmOptions {
   model: string;
+  apiKey?: string;
   temperature?: number;
   maxOutputTokens?: number;
 }
@@ -30,11 +31,13 @@ export async function callGeminiJson<T>(
   prompt: string,
   options: LlmOptions,
 ): Promise<T> {
-  const model = getGenAI().getGenerativeModel({
+  const apiKey = options.apiKey || config.gemini.apiKey;
+  const model = getGenAI(apiKey).getGenerativeModel({
     model: options.model,
     generationConfig: {
       temperature: options.temperature ?? 0.7,
       maxOutputTokens: options.maxOutputTokens ?? 4096,
+      responseMimeType: "application/json",
     },
   });
 

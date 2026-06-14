@@ -6,10 +6,10 @@ import type { ReactNode } from "react";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const styles: Record<Variant, string> = {
-  primary: "bg-brand text-white hover:bg-brand-deep shadow-card shadow-glow/40",
-  secondary: "bg-white text-ink border border-ink/15 hover:border-ink/30",
-  ghost: "bg-transparent text-ink/70 hover:text-ink hover:bg-ink/5",
-  danger: "bg-rose-600 text-white hover:bg-rose-700",
+  primary: "bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20",
+  secondary: "bg-zinc-900 text-zinc-100 border border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800",
+  ghost: "bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800/50",
+  danger: "bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300",
 };
 
 export function Button({

@@ -65,7 +65,7 @@ export async function startSession(
 
   const { ai_message } = await callGeminiJson<{ ai_message: string }>(
     openingPrompt,
-    { model: config.gemini.modelPersona },
+    { model: config.gemini.modelPersona, apiKey: config.gemini.apiKeyPersona },
   );
 
   // Insert session
@@ -153,7 +153,7 @@ export async function respondToSession(
 
     const { ai_message } = await callGeminiJson<{ ai_message: string }>(
       personaPrompt,
-      { model: config.gemini.modelPersona },
+      { model: config.gemini.modelPersona, apiKey: config.gemini.apiKeyPersona },
     );
 
     transcript.push({ role: "ai", content: ai_message, round: currentRound });
@@ -181,7 +181,7 @@ export async function respondToSession(
 
   const { ai_message: closingMessage } = await callGeminiJson<{ ai_message: string }>(
     closingPrompt,
-    { model: config.gemini.modelPersona, maxOutputTokens: 2048 },
+    { model: config.gemini.modelPersona, apiKey: config.gemini.apiKeyPersona, maxOutputTokens: 2048 },
   );
 
   transcript.push({ role: "ai", content: closingMessage, round: 3 });
@@ -200,7 +200,7 @@ export async function respondToSession(
   try {
     evalResult = await callGeminiJson<EvalResult>(
       evalPrompt,
-      { model: config.gemini.modelEvaluator, temperature: 0.3 },
+      { model: config.gemini.modelEvaluator, apiKey: config.gemini.apiKeyEvaluator, temperature: 0.3 },
     );
   } catch {
     // Fallback: skor default netral

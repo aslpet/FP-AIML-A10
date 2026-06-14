@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { admin } from "@/lib/supabase/admin";
 import { getNextCategory } from "@/lib/session/assignment";
 import { todayWIB } from "@/lib/date";
 
@@ -13,6 +14,9 @@ export async function POST() {
 
   const next = await getNextCategory(user.id);
   if (!next) return new NextResponse(null, { status: 204 });
+
+  // Update assignment to the new category so /today picks it up
+  await admin().from("assignment").update({ category: next }).eq("uid", user.id).eq("play_date", todayWIB());
 
   const { data: motion } = await supabase
     .from("daily_motion")
