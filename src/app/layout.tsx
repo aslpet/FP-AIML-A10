@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Navbar } from "@/components/ui/Navbar";
 
 export const metadata: Metadata = {
   title: "debat.in",
@@ -19,7 +20,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <Navbar />
+        {children}
+      </body>
     </html>
   );
 }

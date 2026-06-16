@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=VT323&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,76 +15,23 @@ html {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #000000;
-  color: #f4f4f5; /* zinc-100 */
+  font-family: 'VT323', monospace;
+  background-color: #111111;
+  color: #f1f1f1;
   line-height: 1.6;
   min-height: 100vh;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2a2d; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a3d; }
 
-::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.4);
-}
+.smooth-transition { transition: all 0.2s ease-out; }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.4);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.6);
-}
-
-/* Smooth transitions */
-.smooth-transition {
-  transition: all 0.3s ease-out;
-}
-
-/* Glow effects */
-.glow-primary {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-}
-
-.glow-secondary {
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
-}
-
-.glow-accent {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
-}
-
-.hover-glow-primary:hover {
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
-  transition: box-shadow 0.3s ease;
-}
-
-.hover-glow-secondary:hover {
-  box-shadow: 0 0 30px rgba(6, 182, 212, 0.5);
-  transition: box-shadow 0.3s ease;
-}
-
-.hover-glow-accent:hover {
-  box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
-  transition: box-shadow 0.3s ease;
-}
-
-/* Gradient text */
 .gradient-text {
   background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-
-/* Glass panels */
-.glass {
-  background: rgba(9, 9, 11, 0.75); /* zinc-950 with opacity */
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(39, 39, 42, 0.5); /* zinc-800 with opacity */
 }

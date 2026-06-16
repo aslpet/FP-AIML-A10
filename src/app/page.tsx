@@ -3,22 +3,29 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wand2, Shield, BookOpen, ArrowRight } from "lucide-react";
-import { fetchToday, startSession, getMe } from "@/lib/api";
-import { TopBar } from "@/components/ui/TopBar";
-import { ConsentModal } from "@/components/ConsentModal";
+import Image from "next/image";
+import { fetchToday, fetchAllMotions, startSession, getMe } from "@/lib/api";
 import { Toast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
 
+const CATEGORY_LABELS: Record<string, string> = {
+  politik_hukum: "Politik & Hukum",
+  ekonomi: "Ekonomi",
+  teknologi: "Teknologi",
+  sosial_pendidikan: "Sosial & Pendidikan",
+  lingkungan: "Lingkungan",
+};
+
 export default function TodayPage() {
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [todayState, setTodayState] = useState<any>(null);
   const [meState, setMeState] = useState<any>(null);
-  const [loadingNext, setLoadingNext] = useState(false);
-  
+  const [allMotions, setAllMotions] = useState<any>(null);
+  const [carouselIdx, setCarouselIdx] = useState(0);
+  const [starting, setStarting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,19 +35,25 @@ export default function TodayPage() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           const { error } = await supabase.auth.signInAnonymously();
-          if (error) throw new Error("Gagal membuat sesi anonim: " + error.message);
+          if (error) throw new Error(error.message);
         }
-
-        const [todayRes, meRes] = await Promise.all([fetchToday(), getMe()]);
+        const [todayRes, meRes, allRes] = await Promise.all([
+          fetchToday(),
+          getMe(),
+          fetchAllMotions(),
+        ]);
         setTodayState(todayRes);
         setMeState(meRes);
-        
+        setAllMotions(allRes);
         if (todayRes.state === "in_progress" && todayRes.session_id) {
           router.push(`/arena/${todayRes.session_id}`);
-          return;
+        }
+        // Start carousel at daily category index
+        if (allRes?.items?.length) {
+          const dailyIdx = allRes.items.findIndex((it: any) => it.is_daily);
+          setCarouselIdx(dailyIdx >= 0 ? dailyIdx : 0);
         }
       } catch (err: any) {
-        console.error("Failed to load state", err);
         setErrorMsg(err.message || String(err));
       } finally {
         setLoading(false);
@@ -51,196 +64,465 @@ export default function TodayPage() {
 
   function showToast(m: string) {
     setToast(m);
-    setTimeout(() => setToast(null), 1800);
+    setTimeout(() => setToast(null), 2000);
   }
 
-  async function handleStart() {
-    if (!todayState?.category) return;
-    setLoading(true);
+  async function handleStart(category?: string) {
+    setStarting(true);
     try {
-      const data = await startSession(todayState.category);
+      const data = await startSession(category);
       router.push(`/arena/${data.session_id}`);
     } catch (err) {
       showToast(String(err));
-      setLoading(false);
+      setStarting(false);
     }
   }
 
-  async function handleNextCategory() {
-    setLoadingNext(true);
-    try {
-      const res = await fetch("/api/session/next-category", { method: "POST" });
-      if (res.status === 204) {
-        showToast("Anda sudah memainkan semua kategori hari ini!");
-        setLoadingNext(false);
-        return;
-      }
-      if (!res.ok) throw new Error("Gagal mengambil kategori baru");
-      window.location.reload();
-    } catch(err: any) {
-      showToast(err.message || String(err));
-      setLoadingNext(false);
-    }
-  }
+  const scrollToMotion = () => {
+    document.getElementById("section-motion")?.scrollIntoView({ behavior: "smooth" });
+  };
 
-  if (errorMsg) {
-    return (
-      <div className="min-h-screen flex flex-col bg-black">
-        <TopBar streak={0} hideStreak />
-        <section className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="max-w-md w-full glass rounded-2xl p-8 border border-red-500/20 text-center space-y-6">
-            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
-              <BookOpen className="w-8 h-8 text-red-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-red-400">Gagal Memuat Data</h3>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              {errorMsg}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg smooth-transition cursor-pointer"
-            >
-              Coba Lagi
-            </button>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  if (loading || !todayState || !meState) {
-    return (
-      <div className="min-h-screen flex flex-col bg-black">
-        <TopBar streak={0} hideStreak />
-        <section className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="max-w-4xl w-full text-center space-y-4">
-            <div className="animate-spin inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
-            <p className="text-zinc-400">Mengambil mosi perdebatan hari ini...</p>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  const { state, category, motion: dailyMotion } = todayState;
-
-  if (state === "unavailable" || !dailyMotion) {
-    return (
-      <div className="min-h-screen flex flex-col bg-black">
-        <TopBar streak={meState.streak_count} />
-        <section className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="max-w-md w-full glass rounded-2xl p-8 border border-zinc-800 text-center space-y-6">
-            <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto">
-              <BookOpen className="w-8 h-8 text-zinc-500" />
-            </div>
-            <h3 className="text-2xl font-bold text-zinc-300">Belum Ada Mosi</h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">
-              Mosi perdebatan untuk hari ini belum tersedia atau Anda sudah menyelesaikan semua kategori.
-            </p>
-            <button
-              onClick={() => router.push("/history")}
-              className="w-full py-3 bg-zinc-900 text-white font-semibold rounded-lg hover:bg-zinc-800 smooth-transition cursor-pointer"
-            >
-              Lihat Riwayat
-            </button>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  if (state === "finished") {
-    return (
-      <div className="min-h-screen flex flex-col bg-black">
-        <TopBar streak={meState.streak_count} />
-        <section className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="max-w-md w-full glass rounded-2xl p-8 border border-emerald-500/20 text-center space-y-6">
-            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
-              <Wand2 className="w-8 h-8 text-emerald-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-emerald-400">Sesi Selesai</h3>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              Hebat! Anda sudah menyelesaikan debat hari ini. Silakan lihat hasil evaluasi Anda atau kembali besok untuk tantangan baru.
-            </p>
-            <button
-              onClick={() => router.push(`/result/${todayState.session_id}`)}
-              className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-black font-semibold rounded-lg smooth-transition cursor-pointer"
-            >
-              Lihat Hasil Debat
-            </button>
-            <button
-              onClick={handleNextCategory}
-              disabled={loadingNext}
-              className="w-full py-3 mt-4 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-emerald-400 font-semibold rounded-lg smooth-transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loadingNext ? "Memuat..." : "Mainkan Kategori Lain (Bonus)"}
-            </button>
-          </div>
-        </section>
-      </div>
-    );
-  }
+  const items: any[] = allMotions?.items ?? [];
+  const dailyDone: boolean = allMotions?.daily_done ?? false;
+  const currentItem = items[carouselIdx] ?? null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-black">
-      <TopBar streak={meState.streak_count} />
+    <>
+      {/* ═══════════════════════════════════════════
+          SECTION 1 — Hero
+      ═══════════════════════════════════════════ */}
+      <section className="relative h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden">
 
-      <main className="flex-1 flex flex-col">
-        <AnimatePresence mode="wait">
-          <motion.section
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="flex-1 flex items-center justify-center px-4 py-12"
+        <div className="absolute inset-0 -z-0">
+          <Image
+            src="/assets/background/bg.svg"
+            alt=""
+            fill
+            className="object-cover object-center"
+            priority
+          />
+        </div>
+
+        <div className="relative z-10 flex-1 flex items-center justify-center px-6">
+          <div
+            className="absolute pointer-events-none select-none"
+            style={{
+              right: "-3%",
+              top: "-6%",
+              width: "clamp(320px, 58vw, 620px)",
+              transform: "rotate(22deg)",
+              transformOrigin: "top right",
+              zIndex: 0,
+            }}
           >
-            <div className="max-w-4xl w-full space-y-8">
-              {/* Header Section */}
-              <div className="space-y-4">
-                <div className="inline-block px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800">
-                  <span className="text-xs font-semibold text-emerald-400 tracking-wider">MOSI HARI INI</span>
-                </div>
+            <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto drop-shadow-2xl" priority />
+          </div>
 
-                <h2 className="text-4xl md:text-5xl font-geist font-bold leading-tight text-white tracking-tight">
-                  {dailyMotion.motion_text}
-                </h2>
-
-                <p className="text-lg text-zinc-400">
-                  <span className="inline-flex items-center gap-2 text-emerald-400 font-semibold capitalize">
-                    <BookOpen className="w-5 h-5" />
-                    {category}
-                  </span>
-                </p>
+          <div className="relative z-10 flex flex-col items-center gap-4 select-none">
+            <div className="relative inline-block">
+              <Image
+                src="/assets/title.svg"
+                alt="debat.In"
+                width={956}
+                height={225}
+                className="drop-shadow-xl"
+                style={{ width: "clamp(320px, 68vw, 820px)", height: "auto" }}
+                priority
+              />
+              <div className="absolute" style={{ top: "-2%", right: "-5%" }}>
+                <Image src="/assets/TM.svg" alt="TM" width={70} height={42} style={{ width: "clamp(34px, 5.5vw, 66px)", height: "auto" }} />
               </div>
-
-              {/* Context Card */}
-              <div className="bg-zinc-950/50 border border-zinc-800 border-l-4 border-l-emerald-500 rounded-2xl p-8">
-                <div className="space-y-4">
-                  <p className="text-lg leading-relaxed text-zinc-300 font-medium italic">
-                    "{dailyMotion.context}"
-                  </p>
-                </div>
-              </div>
-
-              {/* Start Button */}
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                onClick={handleStart}
-                className="w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-3 smooth-transition bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer shadow-lg shadow-emerald-500/10"
-              >
-                <span>Mulai Debat</span>
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
             </div>
-          </motion.section>
-        </AnimatePresence>
-      </main>
+            <Image
+              src="/assets/sub-title.svg"
+              alt="AI Argument Training"
+              width={1248}
+              height={126}
+              className="drop-shadow-lg"
+              style={{ width: "clamp(280px, 60vw, 720px)", height: "auto" }}
+            />
+          </div>
+        </div>
 
-      <ConsentModal open={!meState.consent} onAgree={() => {
-         setMeState({...meState, consent: true});
-      }} />
+        <div className="relative z-10 flex flex-col items-center pb-7 gap-2 select-none">
+          <button
+            onClick={scrollToMotion}
+            className="flex items-center gap-4 group cursor-pointer hover:opacity-80 smooth-transition"
+          >
+            <Image src="/assets/button/arrow-down.svg" alt="" width={46} height={89} className="w-5 h-auto animate-bounce" />
+            <span className="text-white/70 text-sm tracking-[0.2em] font-medium">scroll down</span>
+            <Image src="/assets/button/arrow-down.svg" alt="" width={46} height={89} className="w-5 h-auto animate-bounce" style={{ animationDelay: "0.15s" }} />
+          </button>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════
+          SECTION 2 — Motion Carousel
+      ═══════════════════════════════════════════ */}
+      <section
+        id="section-motion"
+        className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center overflow-hidden py-12"
+      >
+        <div className="absolute inset-0 -z-0">
+          <Image src="/assets/background/bg-brown.svg" alt="" fill className="object-cover object-center" />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center gap-6 w-full">
+          {loading ? (
+            <div className="flex items-center gap-3 text-white/50 text-sm">
+              <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+              <span>Mengambil mosi hari ini...</span>
+            </div>
+
+          ) : errorMsg ? (
+            <div className="text-center space-y-4">
+              <p className="text-white/60 text-sm">{errorMsg}</p>
+              <button onClick={() => window.location.reload()} className="text-xs text-white/40 underline">
+                Coba lagi
+              </button>
+            </div>
+
+          ) : items.length === 0 ? (
+            <div className="text-center space-y-4">
+              <p className="text-3xl">📭</p>
+              <p className="text-white/60 text-sm">Mosi hari ini belum tersedia. Cek lagi nanti.</p>
+            </div>
+
+          ) : (
+            <MotionCarousel
+              items={items}
+              dailyDone={dailyDone}
+              currentIdx={carouselIdx}
+              onPrev={() => setCarouselIdx((i) => Math.max(0, i - 1))}
+              onNext={() => setCarouselIdx((i) => Math.min(items.length - 1, i + 1))}
+              onStart={(category) => handleStart(category)}
+              onResume={(sessionId) => router.push(`/arena/${sessionId}`)}
+              onReview={(sessionId) => router.push(`/result/${sessionId}`)}
+              starting={starting}
+            />
+          )}
+        </div>
+      </section>
+
       <Toast message={toast} />
-    </div>
+    </>
+  );
+}
+
+/* ─── Motion Carousel ─── */
+function MotionCarousel({
+  items,
+  dailyDone,
+  currentIdx,
+  onPrev,
+  onNext,
+  onStart,
+  onResume,
+  onReview,
+  starting,
+}: {
+  items: any[];
+  dailyDone: boolean;
+  currentIdx: number;
+  onPrev: () => void;
+  onNext: () => void;
+  onStart: (category: string) => void;
+  onResume: (sessionId: string) => void;
+  onReview: (sessionId: string) => void;
+  starting: boolean;
+}) {
+  const item = items[currentIdx];
+  if (!item) return null;
+
+  const hasPrev2 = currentIdx >= 2;
+  const hasPrev1 = currentIdx >= 1;
+  const hasNext1 = currentIdx < items.length - 1;
+  const hasNext2 = currentIdx < items.length - 2;
+
+  const isLocked = !item.is_daily && !dailyDone;
+  const isDone = item.state === "finished";
+  const isInProgress = item.state === "in_progress";
+  const categoryLabel = CATEGORY_LABELS[item.category] ?? item.category;
+  const motionText = item.motion?.context ?? item.motion?.motion_text ?? "";
+
+  // folder.svg is 781×781 (square).
+  // Category badge rect in SVG: x=190(24.3%), y=103(13.2%), w=247(31.6%), h=97(12.4%)
+  // Content body (below badge): estimated top≈30%, left≈12%, w≈76%, h≈52%
+  const CARD_W = "clamp(200px, 36vw, 300px)";  // center card — square folder
+  const SIDE1_W = "clamp(110px, 21vw, 180px)"; // closest side card
+  const SIDE2_W = "clamp(95px,  18vw, 155px)"; // far side card
+
+  return (
+    <>
+      {/* ── Row: arrows + clipping viewport ── */}
+      <div className="relative w-full flex items-center justify-center">
+
+        {/* Left arrow */}
+        <motion.button
+          whileHover={{ scale: 1.1, x: -3 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onPrev}
+          className={`absolute left-3 sm:left-8 z-20 cursor-pointer smooth-transition ${
+            hasPrev1 ? "opacity-80 hover:opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <Image src="/assets/button/arrow-left.svg" alt="Prev" width={49} height={46} className="w-8 h-auto sm:w-10" />
+        </motion.button>
+
+        {/* Clipping viewport */}
+        <div
+          className="relative overflow-hidden"
+          style={{ width: "min(84vw, 680px)", height: "clamp(220px, 46vw, 390px)" }}
+        >
+          {/* Prev-2 — sliver at far left */}
+          {hasPrev2 && (
+            <div
+              className="absolute pointer-events-none select-none"
+              style={{
+                width: SIDE2_W,
+                top: "4%",
+                right: "71%",
+                opacity: 0.22,
+                transform: "rotate(-7deg)",
+                transformOrigin: "bottom right",
+                zIndex: 1,
+              }}
+            >
+              <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto" />
+            </div>
+          )}
+
+          {/* Prev-1 — partial strip left of center */}
+          {hasPrev1 && (
+            <div
+              className="absolute pointer-events-none select-none"
+              style={{
+                width: SIDE1_W,
+                top: "2%",
+                right: "62%",
+                opacity: 0.42,
+                transform: "rotate(-4deg)",
+                transformOrigin: "bottom right",
+                zIndex: 2,
+              }}
+            >
+              <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto" />
+            </div>
+          )}
+
+          {/* Center card — folder.svg, fully visible */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIdx}
+              initial={{ opacity: 0, scale: 0.93 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.93 }}
+              transition={{ duration: 0.22 }}
+              className="absolute select-none"
+              style={{
+                width: CARD_W,
+                left: "50%",
+                top: 0,
+                transform: "translateX(-50%)",
+                zIndex: 4,
+              }}
+            >
+              <Image
+                src="/assets/folder.svg"
+                alt="Mosi"
+                width={781}
+                height={781}
+                className="w-full h-auto drop-shadow-2xl"
+                priority
+              />
+
+              {/* ── Overlay: category badge ──
+                  folder.svg badge rect: x=190(24.3%) y=103(13.2%) w=247(31.6%) h=97(12.4%) */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div
+                  className="absolute flex items-center justify-center"
+                  style={{ top: "13.2%", left: "24.3%", width: "31.6%", height: "12.4%" }}
+                >
+                  <span
+                    className="font-bold leading-tight text-center"
+                    style={{ color: "#3B1A06", fontSize: "clamp(8px, 1.7vw, 13px)" }}
+                  >
+                    {categoryLabel}
+                  </span>
+                </div>
+
+                {/* Motion text — positioned in the book body */}
+                {!isLocked && (
+                  <div
+                    className="absolute flex items-start justify-center overflow-hidden"
+                    style={{
+                      top: "30%",
+                      left: "12%",
+                      width: "76%",
+                      height: "52%",
+                      padding: "6% 8% 4%",
+                      background: "rgba(255,248,238,0.82)",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    <p
+                      className="text-center leading-snug italic"
+                      style={{
+                        color: "#3d2a1a",
+                        fontSize: "clamp(7px, 1.5vw, 11px)",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 7,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      &ldquo;{motionText}&rdquo;
+                    </p>
+                  </div>
+                )}
+
+                {/* Lock overlay */}
+                {isLocked && (
+                  <div
+                    className="absolute flex flex-col items-center justify-center"
+                    style={{
+                      top: "30%", left: "12%", width: "76%", height: "52%",
+                      background: "rgba(15,5,0,0.65)",
+                      backdropFilter: "blur(3px)",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    <span className="text-2xl">🔒</span>
+                    <p className="text-white/80 text-xs text-center mt-1.5 px-3 leading-snug">
+                      Selesaikan mosi harian<br />terlebih dahulu
+                    </p>
+                  </div>
+                )}
+
+                {/* Done overlay */}
+                {isDone && (
+                  <div
+                    className="absolute flex items-center justify-center"
+                    style={{ top: "30%", left: "12%", width: "76%", height: "52%" }}
+                  >
+                    <div
+                      className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-lg"
+                      style={{ background: "rgba(22,163,74,0.88)", backdropFilter: "blur(2px)" }}
+                    >
+                      <span className="text-white text-xl">✓</span>
+                      <span className="text-white text-xs font-bold">Sudah Dikerjakan</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Next-1 — partial strip right of center */}
+          {hasNext1 && (
+            <div
+              className="absolute pointer-events-none select-none"
+              style={{
+                width: SIDE1_W,
+                top: "2%",
+                left: "62%",
+                opacity: 0.42,
+                transform: "rotate(4deg)",
+                transformOrigin: "bottom left",
+                zIndex: 2,
+              }}
+            >
+              <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto" />
+            </div>
+          )}
+
+          {/* Next-2 — sliver at far right */}
+          {hasNext2 && (
+            <div
+              className="absolute pointer-events-none select-none"
+              style={{
+                width: SIDE2_W,
+                top: "4%",
+                left: "71%",
+                opacity: 0.22,
+                transform: "rotate(7deg)",
+                transformOrigin: "bottom left",
+                zIndex: 1,
+              }}
+            >
+              <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto" />
+            </div>
+          )}
+        </div>
+
+        {/* Right arrow */}
+        <motion.button
+          whileHover={{ scale: 1.1, x: 3 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onNext}
+          className={`absolute right-3 sm:right-8 z-20 cursor-pointer smooth-transition ${
+            hasNext1 ? "opacity-80 hover:opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <Image src="/assets/button/arrow-right.svg" alt="Next" width={49} height={46} className="w-8 h-auto sm:w-10" />
+        </motion.button>
+      </div>
+
+      {/* Dot indicators */}
+      {items.length > 1 && (
+        <div className="flex items-center gap-2 mt-1">
+          {items.map((it: any, i: number) => (
+            <div
+              key={i}
+              className="rounded-full transition-all duration-200"
+              style={{
+                width: i === currentIdx ? 20 : 6,
+                height: 6,
+                background:
+                  i === currentIdx
+                    ? "rgba(255,255,255,0.85)"
+                    : it.state === "finished"
+                    ? "rgba(34,197,94,0.65)"
+                    : "rgba(255,255,255,0.25)",
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Action button */}
+      <AnimatePresence mode="wait">
+        {!isLocked && (
+          <motion.div
+            key={`btn-${currentIdx}-${item.state}`}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                if (isDone) onReview(item.session_id);
+                else if (isInProgress) onResume(item.session_id);
+                else onStart(item.category);
+              }}
+              disabled={starting}
+              className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Image
+                src={isDone ? "/assets/button/button-review.svg" : "/assets/button/button-mulai.svg"}
+                alt={isDone ? "Review" : "Mulai"}
+                width={249}
+                height={111}
+                style={{ width: "clamp(180px, 42vw, 280px)", height: "auto" }}
+                className="drop-shadow-lg"
+              />
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

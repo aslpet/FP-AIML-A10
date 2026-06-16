@@ -44,3 +44,16 @@ export async function getMe() {
   if (!res.ok) return null;
   return res.json();
 }
+
+export async function fetchSession(sessionId: string) {
+  const res = await fetch(`/api/session/load?session_id=${sessionId}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "Failed to load session");
+  return data;
+}
+
+export async function fetchAllMotions() {
+  const res = await fetch("/api/session/all-motions");
+  if (!res.ok) return null;
+  return res.json();
+}

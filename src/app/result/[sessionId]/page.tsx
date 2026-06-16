@@ -2,303 +2,262 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Home, Target, Zap, BookMarked, ChevronDown, ChevronUp } from "lucide-react";
+import { motion } from "framer-motion";
+import Image from "next/image";
 import { fetchResult } from "@/lib/api";
-import { TopBar } from "@/components/ui/TopBar";
 
-interface MetricCard {
-  icon: React.ReactNode;
-  title: string;
-  score: number;
-  color: string;
-  description: string;
+const VERDICT_CONFIG: Record<string, string> = {
+  "Argumen Bertahan": "#22c55e",
+  "Imbang Ketat": "#f59e0b",
+  "Argumen Runtuh": "#ef4444",
+};
+
+function DonutScore({ score, color }: { score: number; color: string }) {
+  const r = 52;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - Math.min(score / 100, 1));
+
+  return (
+    <div className="relative" style={{ width: 148, height: 148 }}>
+      <svg width="148" height="148" viewBox="0 0 148 148" className="-rotate-90">
+        <circle cx="74" cy="74" r={r} fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="13" />
+        <motion.circle
+          cx="74" cy="74" r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="13"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          initial={{ strokeDashoffset: circ }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <motion.span
+          className="text-4xl font-bold tabular-nums leading-none"
+          style={{ color }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5, duration: 0.3 }}
+        >
+          {score}
+        </motion.span>
+        <span className="text-xs mt-1" style={{ color: "rgba(60,30,10,0.5)" }}>
+          dari 100
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ScoreBlocks({ score, max = 5 }: { score: number; max?: number }) {
+  return (
+    <div className="flex gap-1.5">
+      {Array.from({ length: max }).map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ scale: 0.4, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1 + i * 0.07, duration: 0.18 }}
+          className="rounded-md"
+          style={{
+            width: "clamp(30px, 7vw, 40px)",
+            height: "clamp(30px, 7vw, 40px)",
+            background: i < score ? "#22c55e" : "rgba(60,30,10,0.15)",
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function ResultPage({ params }: { params: { sessionId: string } }) {
   const router = useRouter();
-  const sessionId = params.sessionId;
+  const { sessionId } = params;
+
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
-  const [animatedScore, setAnimatedScore] = useState(0);
-  const [copySuccess, setCopySuccess] = useState(false);
-  const [expandedRound, setExpandedRound] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const data = await fetchResult(sessionId);
-        setResult(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    fetchResult(sessionId)
+      .then(setResult)
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [sessionId]);
-
-  useEffect(() => {
-    if (!result) return;
-    const end = result.total_score || 0;
-    if (end === 0) {
-      setAnimatedScore(0);
-      return;
-    }
-    let start = 0;
-    const totalDuration = 1200;
-    const incrementTime = Math.abs(Math.floor(totalDuration / end));
-    const timer = setInterval(() => {
-      start += 1;
-      setAnimatedScore(start);
-      if (start >= end) clearInterval(timer);
-    }, incrementTime);
-    return () => clearInterval(timer);
-  }, [result]);
 
   if (loading || !result) {
     return (
-      <div className="min-h-screen flex flex-col bg-black">
-        <TopBar streak={0} hideStreak />
-        <main className="flex-1 grid place-items-center text-zinc-400">Menghitung hasil...</main>
-      </div>
+      <main className="relative min-h-[calc(100vh-3.5rem)] grid place-items-center overflow-hidden">
+        <div className="absolute inset-0">
+          <Image src="/assets/background/bg-debate.svg" alt="" fill className="object-cover object-center" priority />
+        </div>
+        <div className="relative z-10 flex items-center gap-3 text-white/60 text-sm">
+          <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+          <span>Menghitung hasil...</span>
+        </div>
+      </main>
     );
   }
 
-  const { scores, total_score, rationale, feedback, verdict } = result;
+  const { scores, total_score, feedback, verdict } = result;
+  const totalScore = total_score ?? 0;
+  const scoreColor = VERDICT_CONFIG[verdict] ?? (totalScore >= 70 ? "#22c55e" : totalScore >= 50 ? "#f59e0b" : "#ef4444");
+  const verdictLabel = verdict ?? "";
 
-  const handleShare = () => {
-    const text = `debat.in Session Complete!\nTotal Score: ${total_score}/100\n- Relevansi: ${scores.relevansi}/10\n- Koherensi: ${scores.koherensi || scores.responsiveness || 0}/10\n- Kekuatan Bukti: ${scores.kekuatan_bukti || scores.penalaran || 0}/10\n\nTantang kemampuan analisismu secara harian di debat.in! 🔥`;
+  const metrics = [
+    { label: "Penalaran",      score: scores?.penalaran      ?? 0 },
+    { label: "Relevansi",      score: scores?.relevansi      ?? 0 },
+    { label: "Responsiveness", score: scores?.responsiveness ?? 0 },
+    { label: "Kejelasan",      score: scores?.kejelasan      ?? 0 },
+  ];
+
+  function handleShare() {
+    const text = [
+      "debat.in — Hasil Sesi",
+      `Skor: ${totalScore}/100 — ${verdictLabel}`,
+      ...metrics.map((m) => `${m.label}: ${m.score}/5`),
+      "",
+      "Latih kemampuan berargumenmu di debat.in! 🔥",
+    ].join("\n");
     navigator.clipboard.writeText(text);
-    setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2500);
-  };
-
-  const metrics: MetricCard[] = [
-    {
-      icon: <Target className="w-6 h-6" />,
-      title: 'Relevansi',
-      score: scores.relevansi || 0,
-      color: 'emerald',
-      description: rationale.relevansi || 'Tingkat kesesuaian argumen dengan topik perdebatan.',
-    },
-    {
-      icon: <Zap className="w-6 h-6" />,
-      title: 'Koherensi Logika',
-      score: scores.koherensi || scores.responsiveness || 0,
-      color: 'indigo',
-      description: rationale.koherensi || rationale.responsiveness || 'Struktur argumen dan alur berpikir yang runtut.',
-    },
-    {
-      icon: <BookMarked className="w-6 h-6" />,
-      title: 'Kekuatan Bukti',
-      score: scores.kekuatan_bukti || scores.penalaran || 0,
-      color: 'zinc',
-      description: rationale.kekuatan_bukti || rationale.penalaran || 'Penggunaan bukti, fakta, atau penalaran logis.',
-    },
-  ];
-
-  // Map backend feedback string into items, or just one block if not array
-  // If backend returns a string instead of an array of objects for feedback, we show it as Kesimpulan
-  const feedbackItems = [
-    {
-      round: 1,
-      title: 'Kesimpulan Evaluasi',
-      content: feedback || 'Evaluasi secara keseluruhan atas performa Anda di sesi ini.'
-    }
-  ];
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black">
-      <TopBar streak={0} hideStreak />
+    <main className="relative min-h-[calc(100vh-3.5rem)] flex items-center justify-center overflow-hidden p-4">
+      {/* Arena background */}
+      <div className="absolute inset-0">
+        <Image
+          src="/assets/background/bg-debate.svg"
+          alt=""
+          fill
+          className="object-cover object-center"
+          priority
+        />
+      </div>
 
-      <motion.section
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -15 }}
-        transition={{ duration: 0.4 }}
-        className="flex-1 px-4 sm:px-6 lg:px-8 py-12 bg-black text-zinc-100"
+      {/* Top-right nav — fixed to page corner */}
+      <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => router.push(`/arena/${sessionId}`)}
+          className="cursor-pointer"
+          title="Kembali ke Chat"
+        >
+          <Image
+            src="/assets/button/button-gochat.svg"
+            alt="Go to Chat"
+            width={110}
+            height={38}
+            style={{ width: "clamp(72px, 18vw, 100px)", height: "auto" }}
+          />
+        </motion.button>
+
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => router.push("/")}
+          className="cursor-pointer"
+          title="Beranda"
+        >
+          <Image
+            src="/assets/button/button-backhome.svg"
+            alt="Back to Home"
+            width={110}
+            height={38}
+            style={{ width: "clamp(72px, 18vw, 100px)", height: "auto" }}
+          />
+        </motion.button>
+
+        <motion.button
+          whileHover={{ scale: 1.15 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => router.push("/")}
+          className="cursor-pointer"
+          title="Tutup"
+        >
+          <Image
+            src="/assets/button/button-x.svg"
+            alt="X"
+            width={28}
+            height={28}
+            style={{ width: "clamp(20px, 5vw, 28px)", height: "auto" }}
+          />
+        </motion.button>
+      </div>
+
+      {/* Popup card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="relative z-10 w-full rounded-2xl overflow-y-auto"
+        style={{
+          maxWidth: 460,
+          maxHeight: "calc(100vh - 5.5rem)",
+          background: "#F0DCC4",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+        }}
       >
-        <div className="max-w-4xl mx-auto space-y-8">
-          {/* Big Score Card */}
-          <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden">
-            <p className="text-zinc-500 text-xs uppercase tracking-wider mb-6 font-semibold">
-              🎉 Sesi Selesai
-            </p>
+        {/* Main content */}
+        <div className="px-6 pb-6 space-y-5">
 
-            {/* Circular Score */}
-            <div className="w-40 h-40 mx-auto mb-8 rounded-full border border-zinc-800 flex items-center justify-center bg-zinc-900/20 relative shadow-[0_0_20px_rgba(16,185,129,0.05)]">
-              <svg className="w-full h-full absolute transform -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="transparent"
-                  stroke="#18181b"
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="transparent"
-                  stroke="#10b981"
-                  strokeWidth="4"
-                  strokeDasharray={`${2 * Math.PI * 45}`}
-                  strokeDashoffset={`${2 * Math.PI * 45 * (1 - animatedScore / 100)}`}
-                  className="smooth-transition"
-                />
-              </svg>
-              <div className="text-center z-10">
-                <p className="text-5xl font-geist font-bold text-white">
-                  {animatedScore}
-                </p>
-                <p className="text-xs text-zinc-500 mt-1">/100</p>
-              </div>
-            </div>
-
-            <h2 className="text-3xl md:text-4xl font-bold mb-3 text-white tracking-tight capitalize">
-              {verdict}
-            </h2>
-
-            <p className="text-zinc-400 text-base max-w-lg mx-auto">
-              Performa Anda hari ini telah dievaluasi oleh juri AI.
+          {/* Donut + verdict */}
+          <div className="flex flex-col items-center gap-2 pt-2">
+            <DonutScore score={totalScore} color={scoreColor} />
+            <p className="text-sm font-bold" style={{ color: scoreColor }}>
+              {verdictLabel}
             </p>
           </div>
 
-          {/* Metrics Grid */}
-          <div className="grid md:grid-cols-3 gap-6">
-            {metrics.map((metric) => (
-              <div
-                key={metric.title}
-                className="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 hover:border-zinc-800 smooth-transition group"
-              >
-                {/* Header */}
-                <div className="flex items-center gap-3 mb-6">
-                  <div
-                    className={`w-12 h-12 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-emerald-400`}
-                  >
-                    {metric.icon}
-                  </div>
-                  <h3 className="font-semibold text-md text-zinc-200">{metric.title}</h3>
+          {/* Dimension rows */}
+          <div className="space-y-4">
+            {metrics.map((m) => (
+              <div key={m.label} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold" style={{ color: "#3B1F0A" }}>
+                    {m.label}
+                  </span>
+                  <span className="text-sm font-bold text-green-600">
+                    {m.score}<span className="text-xs font-normal text-gray-500">/5</span>
+                  </span>
                 </div>
-
-                {/* Score */}
-                <div className="mb-6">
-                  <p className="text-4xl font-bold text-white">{metric.score}</p>
-                  <p className="text-zinc-500 text-xs">dari 10</p>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full h-1.5 rounded-full bg-zinc-900 overflow-hidden mb-4">
-                  <div
-                    style={{ width: `${(metric.score / 10) * 100}%` }}
-                    className={`h-full rounded-full ${
-                      metric.color === 'emerald'
-                        ? 'bg-emerald-500'
-                        : metric.color === 'indigo'
-                        ? 'bg-indigo-500'
-                        : 'bg-zinc-400'
-                    }`}
-                  />
-                </div>
-
-                {/* Description */}
-                <p className="text-zinc-500 text-xs leading-relaxed">
-                  {metric.description}
-                </p>
+                <ScoreBlocks score={m.score} />
               </div>
             ))}
           </div>
 
-          {/* Detailed Feedback */}
-          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-8">
-            <h3 className="text-xl font-bold mb-8 flex items-center gap-3 text-white">
-              <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-emerald-400">
-                <BookMarked className="w-5 h-5" />
-              </div>
-              Feedback Keseluruhan
-            </h3>
-
-            <div className="space-y-4">
-              {feedbackItems.map((item) => {
-                const isExpanded = expandedRound === item.round || feedbackItems.length === 1; // Auto expand if only 1
-                return (
-                  <div
-                    key={item.round}
-                    className={`border border-zinc-900 hover:border-zinc-800 rounded-xl p-5 cursor-pointer smooth-transition bg-zinc-900/10`}
-                    onClick={() => setExpandedRound(isExpanded && feedbackItems.length > 1 ? null : item.round)}
-                  >
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-semibold text-base flex items-center gap-3 text-zinc-200">
-                        {item.title}
-                      </h4>
-                      {feedbackItems.length > 1 && (
-                        <span className="text-zinc-500">
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </span>
-                      )}
-                    </div>
-
-                    <AnimatePresence initial={false}>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                          animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
-                          exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <p className="text-zinc-400 text-sm leading-relaxed border-t border-zinc-900 pt-3">
-                            {item.content}
-                          </p>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                );
-              })}
+          {/* Catatan Juri */}
+          {feedback && (
+            <div
+              className="rounded-xl p-4 space-y-1.5"
+              style={{ background: "rgba(60,20,0,0.08)", border: "1px solid rgba(60,20,0,0.1)" }}
+            >
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#7A4A20" }}>
+                Catatan Juri
+              </p>
+              <p className="text-sm leading-relaxed italic" style={{ color: "#4A2810" }}>
+                &ldquo;{feedback}&rdquo;
+              </p>
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={handleShare}
-              className="px-6 py-4 bg-emerald-500 text-black font-semibold rounded-lg hover:bg-emerald-400 smooth-transition flex items-center justify-center gap-3 cursor-pointer shadow-lg shadow-emerald-500/10"
-            >
-              <Share2 className="w-5 h-5" />
-              Bagikan Hasil
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={() => router.push("/")}
-              className="px-6 py-4 bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 font-semibold rounded-lg smooth-transition flex items-center justify-center gap-3 cursor-pointer"
-            >
-              <Home className="w-5 h-5" />
-              Kembali ke Beranda
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Copy Notification Toast */}
-        <AnimatePresence>
-          {copySuccess && (
-            <motion.div
-              initial={{ opacity: 0, y: 50, x: '-50%' }}
-              animate={{ opacity: 1, y: 0, x: '-50%' }}
-              exit={{ opacity: 0, y: 20, x: '-50%' }}
-              className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-800 text-emerald-400 px-6 py-3 rounded-full text-xs sm:text-sm font-semibold shadow-2xl flex items-center gap-2 z-55"
-            >
-              <span>✓ Rangkuman skor berhasil disalin ke papan klip!</span>
-            </motion.div>
           )}
-        </AnimatePresence>
-      </motion.section>
-    </div>
+
+          {/* Bagikan */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleShare}
+            className="w-full py-3 rounded-xl text-sm font-bold cursor-pointer"
+            style={{ background: "#22c55e", color: "#052e0c" }}
+          >
+            {copied ? "Disalin!" : "Bagikan"}
+          </motion.button>
+        </div>
+      </motion.div>
+    </main>
   );
 }
