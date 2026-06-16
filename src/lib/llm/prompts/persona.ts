@@ -57,7 +57,7 @@ ATURAN (WAJIB):
 - Bela posisi lewat kebijakan/konsekuensi/nilai, bukan merendahkan siapa pun.${bebanClause}
 - Gaya retorikamu TETAP sepanjang sesi. Isi & intensitas serangan MENGIKUTI argumen user:
   argumen lemah → serangan yang membuka jalan; argumen kuat → serangan penuh.
-- Bahasa Indonesia, formal–tegas–menantang. Ringkas (maks ~150 kata/giliran).${ctx.historySummary ? `\n\nRIWAYAT: ${ctx.historySummary}` : ""}${ctx.userMessage ? `\n\nARGUMEN USER TERAKHIR: ${ctx.userMessage}` : "\n\nIni adalah pembuka debat. Nyatakan posisimu dengan tegas dan tantang user untuk berargumen."}
+- Bahasa Indonesia, formal–tegas–menantang. WAJIB ringkas: maks 2–3 kalimat per giliran (≤50 kata). Tidak boleh lebih.${ctx.historySummary ? `\n\nRIWAYAT: ${ctx.historySummary}` : ""}${ctx.userMessage ? `\n\nARGUMEN USER TERAKHIR: ${ctx.userMessage}` : "\n\nIni adalah pembuka debat. Nyatakan posisimu dalam 1–2 kalimat singkat dan langsung tantang user."}
 
 KEMBALIKAN HANYA JSON:
 {"ai_message": "..."}`;

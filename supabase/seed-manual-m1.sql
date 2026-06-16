@@ -11,7 +11,7 @@ INSERT INTO daily_motion (
   persona_stance, persona_style, ai_position,
   status, live_date, quality_score
 ) VALUES (
-  'Pemerintah seharusnya membentuk lembaga independen khusus untuk mengawasi penggunaan AI dalam layanan publik',
+  'Pemerintah perlu lembaga independen pengawas AI di layanan publik',
   'Sejumlah instansi pemerintah mulai mengadopsi kecerdasan buatan untuk layanan administratif seperti verifikasi dokumen dan chatbot pengaduan warga, namun belum ada badan pengawas khusus.',
   'kebijakan',
   'politik_hukum',
@@ -28,7 +28,7 @@ INSERT INTO daily_motion (
   persona_stance, persona_style, ai_position,
   status, live_date, quality_score
 ) VALUES (
-  'Kewajiban kendaraan listrik untuk ojek online akan menurunkan pendapatan driver dalam lima tahun pertama',
+  'Mewajibkan ojol pakai motor listrik turunkan pendapatan driver dalam 5 tahun',
   'Pemerintah berencana mewajibkan ojek online beralih ke kendaraan listrik mulai 2027 sebagai bagian dari target pengurangan emisi transportasi.',
   'fakta',
   'ekonomi',
@@ -46,7 +46,7 @@ INSERT INTO daily_motion (
   persona_stance, persona_style, ai_position,
   status, live_date, quality_score
 ) VALUES (
-  'Apakah kenyamanan personalisasi algoritma lebih berharga daripada privasi data pengguna?',
+  'Apakah kenyamanan algoritma lebih berharga daripada privasi data pengguna?',
   'Platform digital semakin mengandalkan personalisasi berbasis data pengguna untuk meningkatkan pengalaman, sementara regulasi perlindungan data pribadi belum sepenuhnya diterapkan di Indonesia.',
   'nilai',
   'teknologi',
@@ -63,7 +63,7 @@ INSERT INTO daily_motion (
   persona_stance, persona_style, ai_position,
   status, live_date, quality_score
 ) VALUES (
-  'Kampus seharusnya mengizinkan penggunaan AI dalam tugas akademik selama mahasiswa mendeklarasikannya',
+  'Kampus seharusnya izinkan AI dalam tugas akademik jika mahasiswa mendeklarasikannya',
   'Beberapa universitas di Indonesia mulai menyusun pedoman penggunaan AI generatif dalam perkuliahan, di tengah kekhawatiran tentang plagiarisme dan penurunan kemampuan berpikir kritis.',
   'kebijakan',
   'sosial_pendidikan',
@@ -81,7 +81,7 @@ INSERT INTO daily_motion (
   persona_stance, persona_style, ai_position,
   status, live_date, quality_score
 ) VALUES (
-  'Indonesia seharusnya menerapkan pajak karbon progresif untuk industri berat mulai 2027',
+  'Indonesia perlu pajak karbon progresif untuk industri berat mulai 2027',
   'Pemerintah telah mengumumkan rencana penerapan pajak karbon sebagai bagian dari komitmen penurunan emisi, namun jadwal pelaksanaannya telah beberapa kali ditunda.',
   'kebijakan',
   'lingkungan',

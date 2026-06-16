@@ -401,12 +401,12 @@ export default function ArenaPage({
                       color: "#3d2a1a",
                       fontSize: "clamp(7px, 1.4vw, 11px)",
                       display: "-webkit-box",
-                      WebkitLineClamp: 8,
+                      WebkitLineClamp: 3,
                       WebkitBoxOrient: "vertical",
                       overflow: "hidden",
                     }}
                   >
-                    &ldquo;{motionData?.context ?? motionData?.motion_text}&rdquo;
+                    &ldquo;{motionData?.motion_text ?? motionData?.context}&rdquo;
                   </p>
                 </div>
               </div>
