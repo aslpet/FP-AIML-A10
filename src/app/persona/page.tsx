@@ -63,7 +63,7 @@ export default function PersonaPage() {
   const persona = PERSONAS[idx];
 
   return (
-    <main className="relative min-h-[calc(100vh-3.5rem)] flex items-center justify-center overflow-hidden">
+    <main className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0">
         <Image

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { X, Menu } from "lucide-react";
+import { X, Menu, User } from "lucide-react";
 import { getMe } from "@/lib/api";
 
 const NAV_LINKS = [
@@ -12,6 +12,10 @@ const NAV_LINKS = [
   { href: "/persona", label: "Persona" },
   { href: "/about", label: "About" },
 ];
+
+// Sub-pages carry their own "Back to Home X" nav per the FEcontext design —
+// the global navbar is intentionally hidden there to avoid a redundant top bar.
+const HIDE_ON = ["/history", "/persona", "/about", "/result"];
 
 export function Navbar() {
   const pathname = usePathname();
@@ -27,6 +31,9 @@ export function Navbar() {
   function isActive(href: string) {
     return pathname.startsWith(href);
   }
+
+  // Hidden on sub-pages (they render their own "Back to Home X").
+  if (HIDE_ON.some((p) => pathname.startsWith(p))) return null;
 
   return (
     <>
@@ -49,8 +56,8 @@ export function Navbar() {
 
           {/* Right controls */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Streak */}
-            {streak !== null && streak > 0 && (
+            {/* Streak — always shown once loaded (matches FEcontext persistent flame counter) */}
+            {streak !== null && (
               <div className="flex items-center gap-1.5 select-none">
                 <Image
                   src="/assets/streak.svg"
@@ -64,15 +71,12 @@ export function Navbar() {
               </div>
             )}
 
-            {/* Profile */}
-            <button className="flex items-center justify-center hover:opacity-75 smooth-transition" title="Profil">
-              <Image
-                src="/assets/box-profil.svg"
-                alt="profil"
-                width={28}
-                height={28}
-                className="w-7 h-auto"
-              />
+            {/* Profile — decorative account icon */}
+            <button
+              className="flex items-center justify-center text-white/90 hover:opacity-75 smooth-transition"
+              title="Profil"
+            >
+              <User className="w-6 h-6" />
             </button>
 
             {/* Hamburger */}

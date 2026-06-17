@@ -89,7 +89,7 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
 
   if (loading || !result) {
     return (
-      <main className="relative min-h-[calc(100vh-3.5rem)] grid place-items-center overflow-hidden">
+      <main className="relative min-h-screen grid place-items-center overflow-hidden">
         <div className="absolute inset-0">
           <Image src="/assets/background/bg-debate.svg" alt="" fill className="object-cover object-center" priority />
         </div>
@@ -127,7 +127,7 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
   }
 
   return (
-    <main className="relative min-h-[calc(100vh-3.5rem)] flex items-center justify-center overflow-hidden p-4">
+    <main className="relative min-h-screen flex items-center justify-center overflow-hidden p-4">
       {/* Arena background */}
       <div className="absolute inset-0">
         <Image
@@ -251,8 +251,11 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleShare}
-            className="w-full py-3 rounded-xl text-sm font-bold cursor-pointer"
-            style={{ background: "#22c55e", color: "#052e0c" }}
+            className="w-full py-3 rounded-xl text-sm font-bold cursor-pointer smooth-transition"
+            style={{
+              background: copied ? "#22c55e" : "#EBD9C2",
+              color: copied ? "#052e0c" : "#3B1A06",
+            }}
           >
             {copied ? "Disalin!" : "Bagikan"}
           </motion.button>

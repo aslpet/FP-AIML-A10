@@ -375,8 +375,8 @@ function MotionCarousel({
                     className="absolute flex items-start justify-center overflow-hidden"
                     style={{
                       top: "30%",
-                      left: "12%",
-                      width: "76%",
+                      left: "14.5%",
+                      width: "71%",
                       height: "52%",
                       padding: "6% 8% 4%",
                       background: "rgba(255,248,238,0.82)",
