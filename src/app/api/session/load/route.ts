@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   const today = todayWIB();
   const { data: motion } = await supabase
     .from("daily_motion")
-    .select("motion_id, motion_text, context, claim_form")
+    .select("motion_id, motion_text, context, claim_form, persona_style")
     .eq("category", session.category)
     .eq("live_date", session.play_date ?? today)
     .maybeSingle();
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     state: session.finished ? "finished" : "in_progress",
     category: session.category,
     motion: motion
-      ? { motion_id: motion.motion_id, motion_text: motion.motion_text, context: motion.context, claim_form: motion.claim_form }
+      ? { motion_id: motion.motion_id, motion_text: motion.motion_text, context: motion.context, claim_form: motion.claim_form, persona_style: motion.persona_style }
       : null,
     session_id: session.session_id,
     transcript: session.transcript ?? [],

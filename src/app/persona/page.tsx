@@ -10,6 +10,7 @@ interface PersonaData {
   id: string;
   name: string;
   desc: ReactNode;
+  image: string;
 }
 
 const PERSONAS: PersonaData[] = [
@@ -17,21 +18,25 @@ const PERSONAS: PersonaData[] = [
     id: "penuntut",
     name: "Sang Penuntut",
     desc: "serang klaim terkuat user lebih dulu; tuntut pertahankan",
+    image: "/assets/persona/mybini.jpg",
   },
   {
     id: "skeptis",
     name: "Sang Skeptis",
     desc: 'bongkar lewat pertanyaan ("apa buktimu?", "premis mana yang menjamin?")',
+    image: "/assets/persona/skeptis.jpg",
   },
   {
     id: "pragmatis",
     name: "Sang Pragmatis",
     desc: "gugat kelayakan dunia nyata (biaya, penegakan, implementasi)",
+    image: "/assets/persona/mybini.jpg",
   },
   {
     id: "idealis",
     name: "Sang Idealis",
     desc: 'gugat dari nilai/etika ("sekalipun efektif, apakah adil?")',
+    image: "/assets/persona/mybini.jpg",
   },
   {
     id: "analis_data",
@@ -42,6 +47,7 @@ const PERSONAS: PersonaData[] = [
         <strong>TIDAK</strong> memvalidasi kebenaran fakta
       </>
     ),
+    image: "/assets/persona/mybini.jpg",
   },
 ];
 
@@ -153,7 +159,7 @@ export default function PersonaPage() {
           >
             {/* Portrait polaroid */}
             <div
-              className="flex-shrink-0 bg-white shadow-2xl"
+              className="flex-shrink-0 bg-white shadow-2xl overflow-hidden"
               style={{
                 width: "clamp(72px, 17%, 180px)",
                 aspectRatio: "1 / 1.15",
@@ -161,7 +167,24 @@ export default function PersonaPage() {
                 transform: "rotate(-4deg)",
               }}
             >
-              <div className="w-full h-full bg-zinc-900" />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={persona.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-full h-full bg-zinc-900"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={persona.image}
+                    alt={persona.name}
+                    className="w-full h-full object-cover object-top"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {/* Gap */}

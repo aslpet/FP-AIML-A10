@@ -30,7 +30,15 @@ const BIG_THRESHOLD = 160;
 
 const PHOTO_W = "clamp(70px, 10vw, 150px)";
 
-function ChatBubble({ role, content, userAvatar }: { role: "ai" | "user"; content: string; userAvatar: string | null }) {
+const PERSONA_IMAGE: Record<string, string> = {
+  penuntut:   "/assets/persona/mybini.jpg",
+  skeptis:    "/assets/persona/kucing.jpg",
+  pragmatis:  "/assets/persona/mybini.jpg",
+  idealis:    "/assets/persona/mybini.jpg",
+  analis_data: "/assets/persona/mybini.jpg",
+};
+
+function ChatBubble({ role, content, userAvatar, personaImage }: { role: "ai" | "user"; content: string; userAvatar: string | null; personaImage: string | null }) {
   const isAI = role === "ai";
   const isBig = content.length > BIG_THRESHOLD;
 
@@ -70,19 +78,29 @@ function ChatBubble({ role, content, userAvatar }: { role: "ai" | "user"; conten
         width: "clamp(240px, 74vw, 740px)",
       }}
     >
-      {/* AI side — box-profil.svg frame */}
+      {/* AI side — box-profil.svg frame with optional persona photo */}
       {isAI && (
         <div
           className="flex-shrink-0"
-          style={{ 
-            width: PHOTO_W, 
-            transform: "rotate(-4deg)", 
+          style={{
+            width: PHOTO_W,
+            transform: "rotate(-4deg)",
             transformOrigin: "bottom center",
-            // PERUBAHAN: Tambahkan baris ini untuk mendorong profil AI ke atas
-            marginBottom: "clamp(30px, 5vw, 44px)" 
+            marginBottom: "clamp(30px, 5vw, 44px)",
           }}
         >
-          <Image src="/assets/box-profil.svg" alt="" width={240} height={189} className="w-full h-auto drop-shadow-lg" />
+          <div className="relative w-full" style={{ aspectRatio: "240/189" }}>
+            <Image src="/assets/box-profil.svg" alt="" width={240} height={189} className="w-full h-auto drop-shadow-lg" />
+            {personaImage && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={personaImage}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover object-top"
+                style={{ clipPath: "polygon(87.05% 11.51%, 11.35% 14.32%, 29.5% 92.46%, 96.35% 75.6%)" }}
+              />
+            )}
+          </div>
         </div>
       )}
 
@@ -111,24 +129,7 @@ function ChatBubble({ role, content, userAvatar }: { role: "ai" | "user"; conten
           className="flex-shrink-0"
           style={{ width: PHOTO_W, transform: "rotate(5deg)", transformOrigin: "bottom center" }}
         >
-          {userAvatar ? (
-            <div className="relative w-full" style={{ aspectRatio: "240/189" }}>
-              <Image
-                src="/assets/box-profil(inverse).svg"
-                alt=""
-                width={240}
-                height={189}
-                className="w-full h-auto drop-shadow-lg"
-              />
-              <div
-                className="absolute overflow-hidden rounded-sm"
-                style={{ top: "6%", left: "9%", width: "82%", height: "66%" }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={userAvatar} alt="" className="w-full h-full object-cover" />
-              </div>
-            </div>
-          ) : (
+          <div className="relative w-full" style={{ aspectRatio: "240/189" }}>
             <Image
               src="/assets/box-profil(inverse).svg"
               alt=""
@@ -136,7 +137,16 @@ function ChatBubble({ role, content, userAvatar }: { role: "ai" | "user"; conten
               height={189}
               className="w-full h-auto drop-shadow-lg"
             />
-          )}
+            {userAvatar && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={userAvatar}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ clipPath: "polygon(12.63% 11.51%, 88.34% 14.32%, 70.19% 92.46%, 3.34% 75.6%)" }}
+              />
+            )}
+          </div>
         </div>
       )}
     </motion.div>
@@ -162,6 +172,7 @@ export default function ArenaPage({
   const [toast, setToast] = useState<string | null>(null);
   const [showMosi, setShowMosi] = useState(false);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [personaImage, setPersonaImage] = useState<string | null>(null);
 
   useEffect(() => { setUserAvatar(getStoredAvatar()); }, []);
 
@@ -176,6 +187,8 @@ export default function ArenaPage({
         const today = await fetchSession(sessionId);
         setMotionData(today.motion);
         setCategory(CATEGORY_LABELS[today.category] ?? today.category ?? "");
+        const style = today.motion?.persona_style as string | undefined;
+        if (style && PERSONA_IMAGE[style]) setPersonaImage(PERSONA_IMAGE[style]);
 
         const mapped: Turn[] = (today.transcript ?? []).map((t: any) => ({
           role: t.role,
@@ -302,19 +315,23 @@ export default function ArenaPage({
 
       {/* ── Chat area — scrollable, all messages ── */}
       <div
-        className="absolute left-0 right-0 overflow-y-auto"
+        className="absolute left-0 right-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         style={{
-          top: "clamp(64px, 9.5vw, 96px)",
+          top: 0, // PERUBAHAN: Ditarik agar nempel persis di bawah batas navbar
           bottom: `calc(${inputBarH} + 20px)`,
           paddingLeft: "clamp(10px, 2.5vw, 32px)",
           paddingRight: "clamp(10px, 2.5vw, 32px)",
-          paddingTop: "6px",
+          paddingTop: "clamp(20px, 4vw, 40px)", // Padding awal untuk memberi ruang napas
           paddingBottom: "6px",
+          
+          // PERUBAHAN PENTING: Masking untuk efek memudar (fade) di bagian atas layar
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 10%, black 100%)",
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 10%, black 100%)",
         }}
       >
         <div className="flex flex-col gap-2.5 max-w-3xl mx-auto">
           {turns.map((turn, i) => (
-            <ChatBubble key={i} role={turn.role} content={turn.content} userAvatar={userAvatar} />
+            <ChatBubble key={i} role={turn.role} content={turn.content} userAvatar={userAvatar} personaImage={personaImage} />
           ))}
 
           {/* Thinking indicator */}

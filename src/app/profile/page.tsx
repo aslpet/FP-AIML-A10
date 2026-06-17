@@ -111,7 +111,7 @@ export default function ProfilePage() {
             <div
               className="rounded-full p-1"
               style={{
-                background: "linear-gradient(135deg, #1B4FE4, #6B8EF5, #1B4FE4)",
+                background: "linear-gradient(135deg, #ffffff, #ffffff, #ffffff)",
                 boxShadow: "0 0 24px rgba(27,79,228,0.6)",
               }}
             >
@@ -159,7 +159,7 @@ export default function ProfilePage() {
           <div
             className="relative"
             style={{
-              border: "2px solid rgba(27,79,228,0.5)",
+              border: "2px solid rgba(255, 255, 255, 0.5)",
               borderRadius: "4px",
               background: "rgba(0,0,0,0.45)",
               backdropFilter: "blur(8px)",
@@ -183,22 +183,21 @@ export default function ProfilePage() {
         {/* Save button */}
         <button
           onClick={handleSave}
-          className="relative group cursor-pointer smooth-transition hover:scale-105 active:scale-95"
+          className="cursor-pointer smooth-transition hover:scale-105 active:scale-95 font-game text-white tracking-widest"
+          style={{
+            fontSize: "clamp(16px, 2.8vw, 24px)",
+            padding: "clamp(10px, 1.4vw, 16px) clamp(32px, 5vw, 60px)",
+            background: saved
+              ? "linear-gradient(135deg, #3c2600, #3c2600)"
+              : "linear-gradient(135deg, #3c2600, #3c2600)",
+            border: "2px solid #3c2600",
+            boxShadow: saved
+              ? "0 0 20px #3c2600, 2px 2px 0 #000"
+              : "0 0 20px #ffffff00, 2px 2px 0 #000",
+            letterSpacing: "0.15em",
+          }}
         >
-          <Image
-            src="/assets/button/button-mulai.svg"
-            alt="Simpan"
-            width={249}
-            height={111}
-            style={{ width: "clamp(160px, 36vw, 240px)", height: "auto" }}
-            className="drop-shadow-lg"
-          />
-          <span
-            className="absolute inset-0 flex items-center justify-center font-game text-white"
-            style={{ fontSize: "clamp(16px, 3vw, 22px)", textShadow: "1px 1px 2px #000", letterSpacing: "0.15em" }}
-          >
-            {saved ? "TERSIMPAN ✓" : "SIMPAN"}
-          </span>
+          {saved ? "TERSIMPAN ✓" : "SIMPAN"}
         </button>
 
         {saved && (
