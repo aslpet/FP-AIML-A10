@@ -143,7 +143,7 @@ export default function TodayPage() {
         </div>
 
         {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/60 to-transparent pointer-events-none z-20" />
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-20" />
 
         {/* Scroll-down — retro bounce */}
         <div className="relative z-30 flex items-end justify-center pb-8 select-none">
@@ -157,14 +157,6 @@ export default function TodayPage() {
                 style={{ fontSize: "clamp(22px, 3.5vw, 52px)" }}
               >
                 &gt;&gt; scroll down &lt;&lt;
-              </span>
-            </div>
-            <div className="animate-bounce-retro" style={{ animationDelay: "0.2s" }}>
-              <span
-                className="font-game text-white/50 group-hover:text-white/70 smooth-transition"
-                style={{ fontSize: "clamp(14px, 2vw, 28px)", letterSpacing: "0.3em" }}
-              >
-                ▼ ▼ ▼
               </span>
             </div>
           </button>
@@ -181,6 +173,8 @@ export default function TodayPage() {
         <div className="absolute inset-0 -z-0">
           <Image src="/assets/background/bg-brown.svg" alt="" fill className="object-cover object-center" />
         </div>
+          {/* Seamless gradient: blends hero bottom into this section */}
+          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-black/75 via-black/30 to-transparent pointer-events-none z-[5]" />
 
         <div className="relative z-10 flex flex-col items-center gap-6 w-full">
           {loading ? (
@@ -210,6 +204,7 @@ export default function TodayPage() {
               currentIdx={carouselIdx}
               onPrev={() => setCarouselIdx((i) => Math.max(0, i - 1))}
               onNext={() => setCarouselIdx((i) => Math.min(items.length - 1, i + 1))}
+              onJump={(i) => setCarouselIdx(i)}
               onStart={(category) => handleStart(category)}
               onResume={(sessionId) => router.push(`/arena/${sessionId}`)}
               onReview={(sessionId) => router.push(`/result/${sessionId}`)}
@@ -231,6 +226,7 @@ function MotionCarousel({
   currentIdx,
   onPrev,
   onNext,
+  onJump,
   onStart,
   onResume,
   onReview,
@@ -241,6 +237,7 @@ function MotionCarousel({
   currentIdx: number;
   onPrev: () => void;
   onNext: () => void;
+  onJump: (idx: number) => void;
   onStart: (category: string) => void;
   onResume: (sessionId: string) => void;
   onReview: (sessionId: string) => void;
@@ -260,12 +257,11 @@ function MotionCarousel({
   const categoryLabel = CATEGORY_LABELS[item.category] ?? item.category;
   const motionText = item.motion?.context ?? item.motion?.motion_text ?? "";
 
-  // folder.svg is 781×781 (square).
-  // Category badge rect in SVG: x=190(24.3%), y=103(13.2%), w=247(31.6%), h=97(12.4%)
-  // Content body (below badge): estimated top≈30%, left≈12%, w≈76%, h≈52%
-  const CARD_W = "clamp(200px, 36vw, 300px)";  // center card — square folder
-  const SIDE1_W = "clamp(110px, 21vw, 180px)"; // closest side card
-  const SIDE2_W = "clamp(95px,  18vw, 155px)"; // far side card
+  // Center card — bigger and truly centered
+  const CARD_W = "clamp(320px, 55vw, 520px)";
+  // Side cards — visibly peeking behind center
+  const SIDE1_W = "clamp(180px, 35vw, 290px)";
+  const SIDE2_W = "clamp(130px, 25vw, 210px)";
 
   return (
     <>
@@ -274,72 +270,79 @@ function MotionCarousel({
 
         {/* Left arrow */}
         <motion.button
-          whileHover={{ scale: 1.1, x: -3 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.15, x: -4 }}
+          whileTap={{ scale: 0.9 }}
           onClick={onPrev}
-          className={`absolute left-3 sm:left-8 z-20 cursor-pointer smooth-transition ${
+          className={`absolute left-2 sm:left-6 z-20 cursor-pointer ${
             hasPrev1 ? "opacity-80 hover:opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
-          <Image src="/assets/button/arrow-left.svg" alt="Prev" width={49} height={46} className="w-8 h-auto sm:w-10" />
+          <Image src="/assets/button/arrow-left.svg" alt="Prev" width={49} height={46} className="w-8 h-auto sm:w-11 drop-shadow-lg" />
         </motion.button>
 
         {/* Clipping viewport */}
         <div
           className="relative overflow-hidden"
-          style={{ width: "min(84vw, 680px)", height: "clamp(220px, 46vw, 390px)" }}
+          style={{ width: "min(90vw, 760px)", height: "clamp(300px, 56vw, 460px)" }}
         >
-          {/* Prev-2 — sliver at far left */}
+          {/* Prev-2 — sliver far left, clickable */}
           {hasPrev2 && (
-            <div
-              className="absolute pointer-events-none select-none"
+            <motion.div
+              animate={{ opacity: 0.22 }}
+              whileHover={{ opacity: 0.42, scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.18 }}
+              onClick={onPrev}
+              className="absolute select-none cursor-pointer"
               style={{
                 width: SIDE2_W,
-                top: "4%",
-                right: "71%",
-                opacity: 0.22,
-                transform: "rotate(-7deg)",
+                top: "9%",
+                right: "67%",
+                transform: "rotate(-9deg)",
                 transformOrigin: "bottom right",
                 zIndex: 1,
               }}
             >
               <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto" />
-            </div>
+            </motion.div>
           )}
 
-          {/* Prev-1 — partial strip left of center */}
+          {/* Prev-1 — closely behind center left, clickable */}
           {hasPrev1 && (
-            <div
-              className="absolute pointer-events-none select-none"
+            <motion.div
+              animate={{ opacity: 0.54 }}
+              whileHover={{ opacity: 0.8, scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.18 }}
+              onClick={onPrev}
+              className="absolute select-none cursor-pointer"
               style={{
                 width: SIDE1_W,
-                top: "2%",
-                right: "62%",
-                opacity: 0.42,
-                transform: "rotate(-4deg)",
+                top: "5%",
+                right: "55%",
+                transform: "rotate(-5deg)",
                 transformOrigin: "bottom right",
                 zIndex: 2,
               }}
             >
               <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto" />
-            </div>
+            </motion.div>
           )}
 
-          {/* Center card — folder.svg, fully visible */}
+          {/* Center card — folder.svg, fully visible, truly centered */}
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIdx}
-              initial={{ opacity: 0, scale: 0.93 }}
+              initial={{ opacity: 0, scale: 0.92 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.93 }}
-              transition={{ duration: 0.22 }}
-              className="absolute select-none"
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={{ duration: 0.2 }}
+              // PERUBAHAN: Gunakan inset-0, m-auto, dan h-fit agar center vertikal & horizontal
+              className="absolute inset-0 m-auto h-fit select-none"
               style={{
                 width: CARD_W,
-                left: "50%",
-                top: 0,
-                transform: "translateX(-50%)",
                 zIndex: 4,
+                // top: 0 Dihapus karena sudah di-handle oleh inset-0 m-auto
               }}
             >
               <Image
@@ -355,38 +358,45 @@ function MotionCarousel({
                   folder.svg badge rect: x=190(24.3%) y=103(13.2%) w=247(31.6%) h=97(12.4%) */}
               <div className="absolute inset-0 pointer-events-none">
                 <div
-                  className="absolute flex items-center justify-center"
+                  className="absolute flex items-center justify-center overflow-hidden"
                   style={{ top: "13.2%", left: "24.3%", width: "31.6%", height: "12.4%" }}
                 >
                   <span
                     className="font-bold leading-tight text-center"
-                    style={{ color: "#3B1A06", fontSize: "clamp(8px, 1.7vw, 13px)" }}
+                    style={{
+                      color: "#3B1A06",
+                      fontSize: "clamp(7px, 1.3vw, 11px)",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
                   >
                     {categoryLabel}
                   </span>
                 </div>
 
-                {/* Motion text — positioned in the book body */}
+                {/* Motion text */}
                 {!isLocked && (
                   <div
                     className="absolute flex items-start justify-center overflow-hidden"
                     style={{
-                      top: "30%",
-                      left: "14.5%",
-                      width: "71%",
-                      height: "52%",
-                      padding: "6% 8% 4%",
-                      background: "rgba(255,248,238,0.82)",
-                      borderRadius: "6px",
+                      top: "30%", // Diturunkan sedikit agar tidak terlalu menempel dengan label kategori
+                      
+                      // PERUBAHAN 1: Mempersempit area agar pas di tengah "kertas"
+                      left: "22%",  // Digeser sedikit ke dalam dari kiri
+                      width: "50%", // Lebar dikurangi drastis agar tidak menabrak batas kanan (area tab map)
+                      height: "50%",
                     }}
                   >
                     <p
-                      className="text-center leading-snug italic"
+                      // PERUBAHAN 2: Menambahkan 'font-semibold' agar teks lebih tebal dan jelas dibaca
+                      className="text-center leading-relaxed italic font-semibold"
                       style={{
                         color: "#3d2a1a",
-                        fontSize: "clamp(7px, 1.5vw, 11px)",
+                        fontSize: "clamp(10px, 1.2vw, 16px)", // Ukuran maksimal dibesarkan sedikit ke 16px
                         display: "-webkit-box",
-                        WebkitLineClamp: 7,
+                        WebkitLineClamp: 8,
                         WebkitBoxOrient: "vertical",
                         overflow: "hidden",
                       }}
@@ -418,7 +428,7 @@ function MotionCarousel({
                 {isDone && (
                   <div
                     className="absolute flex items-center justify-center"
-                    style={{ top: "30%", left: "12%", width: "76%", height: "52%" }}
+                    style={{ top: "50%", left: "10%", width: "76%", height: "52%" }}
                   >
                     <div
                       className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-lg"
@@ -433,74 +443,88 @@ function MotionCarousel({
             </motion.div>
           </AnimatePresence>
 
-          {/* Next-1 — partial strip right of center */}
+          {/* Next-1 — closely behind center right, clickable */}
           {hasNext1 && (
-            <div
-              className="absolute pointer-events-none select-none"
+            <motion.div
+              animate={{ opacity: 0.54 }}
+              whileHover={{ opacity: 0.8, scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.18 }}
+              onClick={onNext}
+              className="absolute select-none cursor-pointer"
               style={{
                 width: SIDE1_W,
-                top: "2%",
-                left: "62%",
-                opacity: 0.42,
-                transform: "rotate(4deg)",
+                top: "5%",
+                left: "55%",
+                transform: "rotate(5deg)",
                 transformOrigin: "bottom left",
                 zIndex: 2,
               }}
             >
               <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto" />
-            </div>
+            </motion.div>
           )}
 
-          {/* Next-2 — sliver at far right */}
+          {/* Next-2 — sliver far right, clickable */}
           {hasNext2 && (
-            <div
-              className="absolute pointer-events-none select-none"
+            <motion.div
+              animate={{ opacity: 0.22 }}
+              whileHover={{ opacity: 0.42, scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.18 }}
+              onClick={onNext}
+              className="absolute select-none cursor-pointer"
               style={{
                 width: SIDE2_W,
-                top: "4%",
-                left: "71%",
-                opacity: 0.22,
-                transform: "rotate(7deg)",
+                top: "9%",
+                left: "67%",
+                transform: "rotate(9deg)",
                 transformOrigin: "bottom left",
                 zIndex: 1,
               }}
             >
               <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto" />
-            </div>
+            </motion.div>
           )}
         </div>
 
         {/* Right arrow */}
         <motion.button
-          whileHover={{ scale: 1.1, x: 3 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.15, x: 4 }}
+          whileTap={{ scale: 0.9 }}
           onClick={onNext}
-          className={`absolute right-3 sm:right-8 z-20 cursor-pointer smooth-transition ${
+          className={`absolute right-2 sm:right-6 z-20 cursor-pointer ${
             hasNext1 ? "opacity-80 hover:opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
-          <Image src="/assets/button/arrow-right.svg" alt="Next" width={49} height={46} className="w-8 h-auto sm:w-10" />
+          <Image src="/assets/button/arrow-right.svg" alt="Next" width={49} height={46} className="w-8 h-auto sm:w-11 drop-shadow-lg" />
         </motion.button>
       </div>
 
-      {/* Dot indicators */}
+      {/* Dot indicators — clickable */}
       {items.length > 1 && (
         <div className="flex items-center gap-2 mt-1">
           {items.map((it: any, i: number) => (
-            <div
+            <button
               key={i}
-              className="rounded-full transition-all duration-200"
-              style={{
-                width: i === currentIdx ? 20 : 6,
-                height: 6,
-                background:
-                  i === currentIdx
-                    ? "rgba(255,255,255,0.85)"
-                    : it.state === "finished"
-                    ? "rgba(34,197,94,0.65)"
-                    : "rgba(255,255,255,0.25)",
-              }}
-            />
+              onClick={() => onJump(i)}
+              className="cursor-pointer p-1 group"
+            >
+              <div
+                className="rounded-full transition-all duration-200 group-hover:scale-125"
+                style={{
+                  width: i === currentIdx ? 20 : 6,
+                  height: 6,
+                  background:
+                    i === currentIdx
+                      ? "rgba(255,255,255,0.9)"
+                      : it.state === "finished"
+                      ? "rgba(34,197,94,0.65)"
+                      : "rgba(255,255,255,0.3)",
+                  transition: "width 0.2s, transform 0.15s",
+                }}
+              />
+            </button>
           ))}
         </div>
       )}
@@ -514,10 +538,12 @@ function MotionCarousel({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.2 }}
+            // PERUBAHAN: Tambahkan mt-8 (margin-top) agar tombol mepet ke bawah
+            className="mt-8" 
           >
             <motion.button
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => {
                 if (isDone) onReview(item.session_id);
                 else if (isInProgress) onResume(item.session_id);
@@ -531,8 +557,9 @@ function MotionCarousel({
                 alt={isDone ? "Review" : "Mulai"}
                 width={249}
                 height={111}
-                style={{ width: "clamp(180px, 42vw, 280px)", height: "auto" }}
-                className="drop-shadow-lg"
+                // PERUBAHAN: Nilai clamp diperkecil dari (180px, 42vw, 280px)
+                style={{ width: "clamp(130px, 28vw, 200px)", height: "auto" }}
+                className="drop-shadow-xl"
               />
             </motion.button>
           </motion.div>
