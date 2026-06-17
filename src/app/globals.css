@@ -28,3 +28,19 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #3a3a3d; }
 
 .smooth-transition { transition: all 0.2s ease-out; }
+
+@keyframes bounce-retro {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-bounce-retro {
+  animation: bounce-retro 0.7s steps(3, end) infinite;
+}
+
+@keyframes blink-retro {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.animate-blink-retro {
+  animation: blink-retro 0.8s steps(1, end) infinite;
+}

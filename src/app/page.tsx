@@ -91,9 +91,9 @@ export default function TodayPage() {
       {/* ═══════════════════════════════════════════
           SECTION 1 — Hero
       ═══════════════════════════════════════════ */}
-      <section className="relative h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden">
+      <section className="relative h-screen -mt-16 flex flex-col overflow-hidden">
 
-        <div className="absolute inset-0 -z-0">
+        <div className="absolute inset-0 z-0">
           <Image
             src="/assets/background/bg.svg"
             alt=""
@@ -103,22 +103,23 @@ export default function TodayPage() {
           />
         </div>
 
-        <div className="relative z-10 flex-1 flex items-center justify-center px-6">
-          <div
-            className="absolute pointer-events-none select-none"
-            style={{
-              right: "-2%",
-              top: "2%",
-              width: "clamp(200px, 36vw, 540px)",
-              transform: "rotate(25.95deg)",
-              transformOrigin: "top center",
-              zIndex: 0,
-            }}
-          >
-            <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto drop-shadow-2xl" priority />
-          </div>
+        {/* Folder decorative — right side */}
+        <div
+          className="absolute pointer-events-none select-none z-10"
+          style={{
+            right: "-1%",
+            top: "15%",
+            width: "clamp(220px, 35vw, 580px)",
+            transform: "rotate(25.95deg)",
+            transformOrigin: "top center",
+          }}
+        >
+          <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto drop-shadow-2xl" priority />
+        </div>
 
-          <div className="relative z-10 flex flex-col items-center gap-4 select-none">
+        {/* Main content — centered with pt-16 to clear the navbar */}
+        <div className="relative z-20 flex-1 flex items-center justify-center px-6 pt-16">
+          <div className="flex flex-col items-center gap-4 select-none">
             <div className="relative inline-block">
               <Image
                 src="/assets/title.svg"
@@ -129,9 +130,6 @@ export default function TodayPage() {
                 style={{ width: "clamp(320px, 68vw, 820px)", height: "auto" }}
                 priority
               />
-              <div className="absolute" style={{ top: "-2%", right: "-5%" }}>
-                <Image src="/assets/TM.svg" alt="TM" width={70} height={42} style={{ width: "clamp(34px, 5.5vw, 66px)", height: "auto" }} />
-              </div>
             </div>
             <Image
               src="/assets/sub-title.svg"
@@ -145,31 +143,30 @@ export default function TodayPage() {
         </div>
 
         {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/50 to-transparent pointer-events-none z-10" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/60 to-transparent pointer-events-none z-20" />
 
-        <div className="relative z-20 flex items-end justify-center pb-6 select-none">
+        {/* Scroll-down — retro bounce */}
+        <div className="relative z-30 flex items-end justify-center pb-8 select-none">
           <button
             onClick={scrollToMotion}
-            className="flex items-center gap-6 cursor-pointer hover:opacity-75 smooth-transition"
+            className="flex flex-col items-center gap-2 cursor-pointer group"
           >
-            <span
-              className="font-game text-white/80 leading-none"
-              style={{ fontSize: "clamp(28px, 4.5vw, 72px)", display: "inline-block", transform: "rotate(90deg)", letterSpacing: "-0.12em" }}
-            >
-              {`>>`}
-            </span>
-            <span
-              className="font-game text-white/80"
-              style={{ fontSize: "clamp(28px, 4.5vw, 72px)" }}
-            >
-              scroll down
-            </span>
-            <span
-              className="font-game text-white/80 leading-none"
-              style={{ fontSize: "clamp(28px, 4.5vw, 72px)", display: "inline-block", transform: "rotate(90deg)", letterSpacing: "-0.12em" }}
-            >
-              {`>>`}
-            </span>
+            <div className="animate-bounce-retro">
+              <span
+                className="font-game text-white/85 tracking-widest group-hover:text-white smooth-transition"
+                style={{ fontSize: "clamp(22px, 3.5vw, 52px)" }}
+              >
+                &gt;&gt; scroll down &lt;&lt;
+              </span>
+            </div>
+            <div className="animate-bounce-retro" style={{ animationDelay: "0.2s" }}>
+              <span
+                className="font-game text-white/50 group-hover:text-white/70 smooth-transition"
+                style={{ fontSize: "clamp(14px, 2vw, 28px)", letterSpacing: "0.3em" }}
+              >
+                ▼ ▼ ▼
+              </span>
+            </div>
           </button>
         </div>
       </section>
@@ -179,7 +176,7 @@ export default function TodayPage() {
       ═══════════════════════════════════════════ */}
       <section
         id="section-motion"
-        className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center overflow-hidden py-12"
+        className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden py-12"
       >
         <div className="absolute inset-0 -z-0">
           <Image src="/assets/background/bg-brown.svg" alt="" fill className="object-cover object-center" />

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { X, Menu, User } from "lucide-react";
+import { X, Menu } from "lucide-react";
 import { getMe } from "@/lib/api";
 
 const NAV_LINKS = [
@@ -13,50 +13,65 @@ const NAV_LINKS = [
   { href: "/about", label: "About" },
 ];
 
-// Sub-pages carry their own "Back to Home X" nav per the FEcontext design —
-// the global navbar is intentionally hidden there to avoid a redundant top bar.
-const HIDE_ON = ["/history", "/persona", "/about", "/result"];
+const HIDE_ON = ["/history", "/persona", "/about", "/result", "/profile"];
+
+const PROFILE_KEY = "debetin_profile";
+
+function getStoredAvatar(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw)?.avatarDataUrl ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export function Navbar() {
   const pathname = usePathname();
   const [streak, setStreak] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
 
   useEffect(() => {
     getMe()
       .then((me) => setStreak(me?.streak_count ?? 0))
       .catch(() => setStreak(0));
+    setAvatar(getStoredAvatar());
+
+    // Listen for profile updates from other components
+    const handler = () => setAvatar(getStoredAvatar());
+    window.addEventListener("debetin_profile_updated", handler);
+    return () => window.removeEventListener("debetin_profile_updated", handler);
   }, []);
 
   function isActive(href: string) {
     return pathname.startsWith(href);
   }
 
-  // Hidden on sub-pages (they render their own "Back to Home X").
   if (HIDE_ON.some((p) => pathname.startsWith(p))) return null;
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-transparent border-b border-white/[0.08]">
-        <div className="w-full px-3 sm:px-4 h-14 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-50 bg-black/25 backdrop-blur-lg border-b border-white/[0.08]">
+        <div className="w-full px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
 
           {/* Logo */}
-          <Link href="/" className="flex-shrink-0 select-none">
-            <span
-              className="font-geist font-black text-2xl sm:text-3xl tracking-tight"
-              style={{
-                color: "#1B4FE4",
-                WebkitTextStroke: "2px white",
-                paintOrder: "stroke fill",
-              }}
-            >
-              debat<span style={{ color: "#1B4FE4" }}>.</span>In
-            </span>
+          <Link href="/" className="flex-shrink-0 select-none group">
+            <Image
+              src="/assets/title.svg"
+              alt="debat.In logo"
+              width={150}
+              height={40}
+              className="h-8 sm:h-10 w-auto transition-opacity group-hover:opacity-80 drop-shadow-md"
+              priority
+            />
           </Link>
 
           {/* Right controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Streak — always shown once loaded (matches FEcontext persistent flame counter) */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Streak */}
             {streak !== null && (
               <div className="flex items-center gap-1.5 select-none">
                 <Image
@@ -67,17 +82,35 @@ export function Navbar() {
                   className="w-5 h-auto"
                   priority
                 />
-                <span className="text-sm font-bold text-white">{streak}</span>
+                <span className="font-game text-base text-white font-bold">{streak}</span>
               </div>
             )}
 
-            {/* Profile — decorative account icon */}
-            <button
-              className="flex items-center justify-center text-white/90 hover:opacity-75 smooth-transition"
+            {/* Profile button → /profile */}
+            <Link
+              href="/profile"
+              className="flex items-center justify-center smooth-transition hover:opacity-80 focus:outline-none"
               title="Profil"
             >
-              <User className="w-6 h-6" />
-            </button>
+              {avatar ? (
+                <div
+                  className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/40 shadow-lg"
+                  style={{ boxShadow: "0 0 8px rgba(0, 0, 0, 0.5)" }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={avatar} alt="Profil" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-full border-2 border-white/30 flex items-center justify-center"
+                  style={{ background: "rgba(0, 0, 0, 0.25)" }}
+                >
+                  <svg className="w-4 h-4 text-white/80" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+              )}
+            </Link>
 
             {/* Hamburger */}
             <button
@@ -91,7 +124,7 @@ export function Navbar() {
 
         {/* Dropdown menu */}
         {menuOpen && (
-          <div className="absolute top-full left-0 right-0 bg-black/80 backdrop-blur-md border-b border-white/[0.06] py-2 z-50">
+          <div className="absolute top-full left-0 right-0 bg-black/85 backdrop-blur-xl border-b border-white/[0.06] py-2 z-50">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}

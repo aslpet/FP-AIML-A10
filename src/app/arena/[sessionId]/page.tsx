@@ -8,6 +8,13 @@ import { respondToSession, fetchSession } from "@/lib/api";
 import type { Turn } from "@/lib/types";
 import { Toast } from "@/components/ui/Toast";
 
+const PROFILE_KEY = "debetin_profile";
+function getStoredAvatar(): string | null {
+  if (typeof window === "undefined") return null;
+  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}")?.avatarDataUrl ?? null; }
+  catch { return null; }
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   politik_hukum: "Politik & Hukum",
   ekonomi: "Ekonomi",
@@ -23,7 +30,7 @@ const BIG_THRESHOLD = 160;
 
 const PHOTO_W = "clamp(38px, 5vw, 60px)";
 
-function ChatBubble({ role, content }: { role: "ai" | "user"; content: string }) {
+function ChatBubble({ role, content, userAvatar }: { role: "ai" | "user"; content: string; userAvatar: string | null }) {
   const isAI = role === "ai";
   const isBig = content.length > BIG_THRESHOLD;
 
@@ -89,13 +96,32 @@ function ChatBubble({ role, content }: { role: "ai" | "user"; content: string })
             transformOrigin: "bottom center",
           }}
         >
-          <Image
-            src="/assets/box-profil.svg"
-            alt=""
-            width={240}
-            height={189}
-            className="w-full h-auto drop-shadow-lg"
-          />
+          {userAvatar ? (
+            <div className="relative w-full" style={{ aspectRatio: "240/189" }}>
+              <Image
+                src="/assets/box-profil.svg"
+                alt=""
+                width={240}
+                height={189}
+                className="w-full h-auto drop-shadow-lg"
+              />
+              <div
+                className="absolute overflow-hidden rounded-sm"
+                style={{ top: "6%", left: "9%", width: "82%", height: "66%" }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={userAvatar} alt="" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          ) : (
+            <Image
+              src="/assets/box-profil.svg"
+              alt=""
+              width={240}
+              height={189}
+              className="w-full h-auto drop-shadow-lg"
+            />
+          )}
         </div>
       )}
     </motion.div>
@@ -120,6 +146,9 @@ export default function ArenaPage({
   const [userInput, setUserInput] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [showMosi, setShowMosi] = useState(false);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+
+  useEffect(() => { setUserAvatar(getStoredAvatar()); }, []);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -184,7 +213,7 @@ export default function ArenaPage({
 
   if (loading) {
     return (
-      <main className="relative h-[calc(100vh-3.5rem)] grid place-items-center overflow-hidden">
+      <main className="relative h-[calc(100vh-4rem)] grid place-items-center overflow-hidden">
         <div className="absolute inset-0">
           <Image src="/assets/background/bg.svg" alt="" fill className="object-cover" priority />
         </div>
@@ -199,7 +228,7 @@ export default function ArenaPage({
   const inputBarH = "clamp(50px, 6.5vw, 68px)";
 
   return (
-    <main className="relative h-[calc(100vh-3.5rem)] overflow-hidden">
+    <main className="relative h-[calc(100vh-4rem)] overflow-hidden">
 
       {/* ── Background ── */}
       <div className="absolute inset-0">
@@ -292,7 +321,7 @@ export default function ArenaPage({
       >
         <div className="flex flex-col gap-2.5 max-w-3xl mx-auto">
           {turns.map((turn, i) => (
-            <ChatBubble key={i} role={turn.role} content={turn.content} />
+            <ChatBubble key={i} role={turn.role} content={turn.content} userAvatar={userAvatar} />
           ))}
 
           {/* Thinking indicator */}
