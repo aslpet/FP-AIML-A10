@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -79,6 +79,8 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchResult(sessionId)
@@ -113,17 +115,71 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
     { label: "Kejelasan",      score: scores?.kejelasan      ?? 0 },
   ];
 
-  function handleShare() {
-    const text = [
-      "debat.in — Hasil Sesi",
+  async function handleShare() {
+    setSharing(true);
+    const fallbackText = [
+      "🎯 debat.in — Hasil Debatku",
       `Skor: ${totalScore}/100 — ${verdictLabel}`,
-      ...metrics.map((m) => `${m.label}: ${m.score}/5`),
+      metrics.map((m) => `${m.label}: ${m.score}/5`).join(" · "),
       "",
-      "Latih kemampuan berargumenmu di debat.in! 🔥",
+      "Latih kemampuan berargumenmu di debat.in!",
     ].join("\n");
-    navigator.clipboard.writeText(text);
+
+    if (cardRef.current) {
+      try {
+        const html2canvas = (await import("html2canvas")).default;
+        const canvas = await html2canvas(cardRef.current, {
+          backgroundColor: "#C8946A",
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+        if (blob) {
+          const file = new File([blob], "hasil-debat.png", { type: "image/png" });
+
+          // 1. Native share with file (mobile, supports HTTPS)
+          if (typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
+            try {
+              await navigator.share({ title: "debat.in", text: fallbackText, files: [file] });
+              setSharing(false);
+              return;
+            } catch { /* cancelled, fall through */ }
+          }
+
+          // 2. Clipboard image (desktop, HTTPS only)
+          if (typeof ClipboardItem !== "undefined" && window.isSecureContext) {
+            try {
+              await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2500);
+              setSharing(false);
+              return;
+            } catch { /* fall through */ }
+          }
+
+          // 3. Auto-download PNG (works on HTTP too)
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "hasil-debat.png";
+          a.click();
+          URL.revokeObjectURL(url);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 3000);
+          setSharing(false);
+          return;
+        }
+      } catch { /* screenshot failed, fall through to text */ }
+    }
+
+    // 4. Last resort: copy text
+    try {
+      await navigator.clipboard.writeText(fallbackText);
+    } catch { /* ignore */ }
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+    setSharing(false);
   }
 
   return (
@@ -192,6 +248,7 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
 
       {/* Popup card */}
       <motion.div
+        ref={cardRef}
         initial={{ opacity: 0, scale: 0.95, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
@@ -248,16 +305,23 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
 
           {/* Bagikan */}
           <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: sharing ? 1 : 1.02 }}
+            whileTap={{ scale: sharing ? 1 : 0.97 }}
             onClick={handleShare}
-            className="w-full py-3 rounded-xl text-sm font-bold cursor-pointer smooth-transition"
+            disabled={sharing}
+            className="w-full py-3 rounded-xl text-sm font-bold cursor-pointer smooth-transition flex items-center justify-center gap-2"
             style={{
               background: copied ? "#22c55e" : "#EBD9C2",
               color: copied ? "#052e0c" : "#3B1A06",
+              opacity: sharing ? 0.7 : 1,
             }}
           >
-            {copied ? "Disalin!" : "Bagikan"}
+            {sharing ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Menyiapkan gambar...
+              </>
+            ) : copied ? "Gambar tersimpan! Tinggal bagikan" : "Share (download) ^^"}
           </motion.button>
         </div>
       </motion.div>

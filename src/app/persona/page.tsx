@@ -24,13 +24,13 @@ const PERSONAS: PersonaData[] = [
     id: "skeptis",
     name: "Sang Skeptis",
     desc: 'bongkar lewat pertanyaan ("apa buktimu?", "premis mana yang menjamin?")',
-    image: "/assets/persona/skeptis.jpg",
+    image: "/assets/persona/kucing.jpg",
   },
   {
     id: "pragmatis",
     name: "Sang Pragmatis",
     desc: "gugat kelayakan dunia nyata (biaya, penegakan, implementasi)",
-    image: "/assets/persona/mybini.jpg",
+    image: "/assets/persona/carte.webp",
   },
   {
     id: "idealis",
@@ -161,9 +161,11 @@ export default function PersonaPage() {
             <div
               className="flex-shrink-0 bg-white shadow-2xl overflow-hidden"
               style={{
-                width: "clamp(72px, 17%, 180px)",
+                // PERUBAHAN 1: Memperbesar batas ukuran dari 17% menjadi 26%, dan batas maksimal dari 180px menjadi 280px
+                width: "clamp(200px, 26%, 280px)", 
                 aspectRatio: "1 / 1.15",
-                padding: "3px 3px 18% 3px",
+                // PERUBAHAN 2: Menyesuaikan bingkai polaroid agar sedikit lebih tebal dan responsif
+                padding: "clamp(6px, 1vw, 12px) clamp(6px, 1vw, 12px) 3% clamp(6px, 1vw, 12px)",
                 transform: "rotate(-4deg)",
               }}
             >
@@ -181,15 +183,17 @@ export default function PersonaPage() {
                     src={persona.image}
                     alt={persona.name}
                     className="w-full h-full object-cover object-top"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    // PERUBAHAN 3 (Opsional): Dihapus sementara agar jika gambar error/tidak ada, kotak hitamnya tetap terlihat sebagai placeholder, bukan hilang menjadi putih polos
+                    // onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} 
                   />
                 </motion.div>
               </AnimatePresence>
             </div>
 
-            {/* Gap */}
+            {/* Gap (Jarak antara foto dan teks) */}
             <div
-              style={{ width: "clamp(10px, 4%, 36px)", flexShrink: 0 }}
+              // PERUBAHAN 4: Jarak diperlebar sedikit agar teks tidak terlalu menempel dengan foto yang sudah membesar
+              style={{ width: "clamp(16px, 5%, 48px)", flexShrink: 0 }} 
             />
 
             {/* Name + description */}

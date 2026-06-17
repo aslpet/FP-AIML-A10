@@ -33,7 +33,7 @@ const PHOTO_W = "clamp(70px, 10vw, 150px)";
 const PERSONA_IMAGE: Record<string, string> = {
   penuntut:   "/assets/persona/mybini.jpg",
   skeptis:    "/assets/persona/kucing.jpg",
-  pragmatis:  "/assets/persona/mybini.jpg",
+  pragmatis:  "/assets/persona/carte.jpg",
   idealis:    "/assets/persona/mybini.jpg",
   analis_data: "/assets/persona/mybini.jpg",
 };
