@@ -21,6 +21,8 @@ type Phase = "thinking" | "await" | "done";
 // Use big bubble when text is longer than ~3-4 lines worth of chars
 const BIG_THRESHOLD = 160;
 
+const PHOTO_W = "clamp(38px, 5vw, 60px)";
+
 function ChatBubble({ role, content }: { role: "ai" | "user"; content: string }) {
   const isAI = role === "ai";
   const isBig = content.length > BIG_THRESHOLD;
@@ -31,8 +33,6 @@ function ChatBubble({ role, content }: { role: "ai" | "user"; content: string })
 
   const dims = isBig ? { w: 917, h: 303 } : { w: 887, h: 218 };
 
-  // Spike padding: chat-big spike ~14% left (AI) or 15% right (user)
-  // chat-small spike ~13% left (AI) or 13% right (user)
   const pl = isAI ? (isBig ? "14%" : "14%") : (isBig ? "9%" : "5%");
   const pr = isAI ? (isBig ? "9%" : "5%") : (isBig ? "15%" : "14%");
   const pt = isBig ? "9%" : "11%";
@@ -45,17 +45,30 @@ function ChatBubble({ role, content }: { role: "ai" | "user"; content: string })
       transition={{ duration: 0.22 }}
       style={{
         alignSelf: isAI ? "flex-start" : "flex-end",
-        width: "clamp(240px, 68vw, 700px)",
+        display: "flex",
+        alignItems: "flex-end",
+        gap: "clamp(4px, 0.8vw, 10px)",
+        width: "clamp(240px, 74vw, 740px)",
       }}
     >
-      <div className="relative">
-        <Image
-          src={src}
-          alt=""
-          width={dims.w}
-          height={dims.h}
-          className="w-full h-auto"
-        />
+      {/* AI persona polaroid — left of AI bubble */}
+      {isAI && (
+        <div
+          className="bg-white shadow-lg flex-shrink-0"
+          style={{
+            padding: "3px 3px 13px 3px",
+            width: PHOTO_W,
+            transform: "rotate(-4deg)",
+            transformOrigin: "bottom center",
+          }}
+        >
+          <div className="bg-zinc-900 w-full" style={{ aspectRatio: "1" }} />
+        </div>
+      )}
+
+      {/* Bubble */}
+      <div className="relative flex-1 min-w-0">
+        <Image src={src} alt="" width={dims.w} height={dims.h} className="w-full h-auto" />
         <div
           className="absolute inset-0 flex items-center overflow-hidden"
           style={{ paddingLeft: pl, paddingRight: pr, paddingTop: pt, paddingBottom: pb }}
@@ -65,6 +78,26 @@ function ChatBubble({ role, content }: { role: "ai" | "user"; content: string })
           </p>
         </div>
       </div>
+
+      {/* User profile box — right of user bubble */}
+      {!isAI && (
+        <div
+          className="flex-shrink-0"
+          style={{
+            width: PHOTO_W,
+            transform: "rotate(5deg)",
+            transformOrigin: "bottom center",
+          }}
+        >
+          <Image
+            src="/assets/box-profil.svg"
+            alt=""
+            width={240}
+            height={189}
+            className="w-full h-auto drop-shadow-lg"
+          />
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -267,9 +300,20 @@ export default function ArenaPage({
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              style={{ alignSelf: "flex-start", width: "clamp(140px, 24vw, 260px)" }}
+              style={{
+                alignSelf: "flex-start",
+                display: "flex",
+                alignItems: "flex-end",
+                gap: "clamp(4px, 0.8vw, 10px)",
+              }}
             >
-              <div className="relative">
+              <div
+                className="bg-white shadow-lg flex-shrink-0"
+                style={{ padding: "3px 3px 13px 3px", width: PHOTO_W, transform: "rotate(-4deg)", transformOrigin: "bottom center" }}
+              >
+                <div className="bg-zinc-900 w-full" style={{ aspectRatio: "1" }} />
+              </div>
+              <div className="relative" style={{ width: "clamp(120px, 20vw, 220px)" }}>
                 <Image src="/assets/chat-small.svg" alt="" width={887} height={218} className="w-full h-auto" />
                 <div
                   className="absolute inset-0 flex items-center"
@@ -293,65 +337,89 @@ export default function ArenaPage({
         </div>
       </div>
 
-      {/* ── Bottom: input bar + submit button ── */}
-      <div
-        className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center pb-3 px-3"
-      >
-        <div
-          className="flex items-stretch"
-          style={{ width: "clamp(320px, 76vw, 840px)", height: inputBarH }}
-        >
-          {/* chat-answer.svg (white parallelogram) */}
-          <div className="relative min-w-0" style={{ flex: 961 }}>
-            <Image src="/assets/chat-answer.svg" alt="" fill className="object-fill" />
-            <div
-              className="absolute inset-0 flex items-center"
-              style={{ paddingLeft: "9%", paddingRight: "3%", paddingTop: "7%", paddingBottom: "7%" }}
-            >
-              {phase === "await" ? (
-                <input
-                  type="text"
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleSubmit();
-                    }
-                  }}
-                  placeholder="Argumen kamu ....."
-                  className="w-full bg-transparent text-zinc-800 placeholder-zinc-500 text-sm sm:text-base font-medium outline-none"
-                  autoFocus
-                />
-              ) : phase === "done" ? (
-                <span className="text-zinc-500 text-sm italic select-none">
-                  Debat selesai! Lihat hasil →
-                </span>
-              ) : (
-                <span className="text-zinc-400 text-sm italic select-none">
-                  AI sedang berpikir...
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* button-submit.svg */}
+      {/* ── Bottom: statistik button (done) OR input bar ── */}
+      {phase === "done" ? (
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center pb-4">
           <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            onClick={() => {
-              if (phase === "done") router.push(`/result/${sessionId}`);
-              else handleSubmit();
-            }}
-            disabled={phase === "thinking"}
-            className="relative cursor-pointer disabled:opacity-40"
-            style={{ flex: 162 }}
-            title={phase === "done" ? "Lihat Hasil" : "Kirim Argumen (Enter)"}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => router.push(`/result/${sessionId}`)}
+            className="cursor-pointer flex items-center"
           >
-            <Image src="/assets/button/button-submit.svg" alt="Kirim" fill className="object-fill" />
+            <Image
+              src="/assets/statistik-left.svg"
+              alt=""
+              width={60}
+              height={60}
+              style={{ width: "clamp(32px, 4.5vw, 56px)", height: "auto" }}
+            />
+            <Image
+              src="/assets/button/button-statistik.svg"
+              alt="Lihat Statistik Debat"
+              width={480}
+              height={80}
+              style={{ width: "clamp(180px, 38vw, 460px)", height: "auto" }}
+            />
+            <Image
+              src="/assets/statistik-right.svg"
+              alt=""
+              width={60}
+              height={60}
+              style={{ width: "clamp(32px, 4.5vw, 56px)", height: "auto" }}
+            />
           </motion.button>
         </div>
-      </div>
+      ) : (
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center pb-3 px-3">
+          <div
+            className="flex items-stretch"
+            style={{ width: "clamp(320px, 76vw, 840px)", height: inputBarH }}
+          >
+            {/* chat-answer.svg (white parallelogram) */}
+            <div className="relative min-w-0" style={{ flex: 961 }}>
+              <Image src="/assets/chat-answer.svg" alt="" fill className="object-fill" />
+              <div
+                className="absolute inset-0 flex items-center"
+                style={{ paddingLeft: "9%", paddingRight: "3%", paddingTop: "7%", paddingBottom: "7%" }}
+              >
+                {phase === "await" ? (
+                  <input
+                    type="text"
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
+                    }}
+                    placeholder="Argumen kamu ....."
+                    className="w-full bg-transparent text-zinc-800 placeholder-zinc-500 text-sm sm:text-base font-medium outline-none"
+                    autoFocus
+                  />
+                ) : (
+                  <span className="text-zinc-400 text-sm italic select-none">
+                    AI sedang berpikir...
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* button-submit.svg */}
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={handleSubmit}
+              disabled={phase === "thinking"}
+              className="relative cursor-pointer disabled:opacity-40"
+              style={{ flex: 162 }}
+              title="Kirim Argumen (Enter)"
+            >
+              <Image src="/assets/button/button-submit.svg" alt="Kirim" fill className="object-fill" />
+            </motion.button>
+          </div>
+        </div>
+      )}
 
       {/* ── Mosi card overlay ── */}
       <AnimatePresence>
@@ -363,6 +431,15 @@ export default function ArenaPage({
             className="absolute inset-0 z-50 flex items-center justify-center bg-black/60"
             onClick={() => setShowMosi(false)}
           >
+            {/* X button */}
+            <button
+              className="absolute top-4 right-6 font-game text-white/90 cursor-pointer hover:opacity-70 select-none"
+              style={{ fontSize: "clamp(22px, 4vw, 36px)", zIndex: 60 }}
+              onClick={() => setShowMosi(false)}
+            >
+              X
+            </button>
+
             <motion.div
               initial={{ scale: 0.82, y: 40 }}
               animate={{ scale: 1, y: 0 }}
@@ -411,9 +488,6 @@ export default function ArenaPage({
                 </div>
               </div>
             </motion.div>
-            <p className="absolute bottom-6 text-white/40 text-xs select-none">
-              Tap untuk menutup
-            </p>
           </motion.div>
         )}
       </AnimatePresence>

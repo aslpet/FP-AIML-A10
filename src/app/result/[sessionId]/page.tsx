@@ -20,7 +20,7 @@ function DonutScore({ score, color }: { score: number; color: string }) {
   return (
     <div className="relative" style={{ width: 148, height: 148 }}>
       <svg width="148" height="148" viewBox="0 0 148 148" className="-rotate-90">
-        <circle cx="74" cy="74" r={r} fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="13" />
+        <circle cx="74" cy="74" r={r} fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="13" />
         <motion.circle
           cx="74" cy="74" r={r}
           fill="none"
@@ -43,7 +43,7 @@ function DonutScore({ score, color }: { score: number; color: string }) {
         >
           {score}
         </motion.span>
-        <span className="text-xs mt-1" style={{ color: "rgba(60,30,10,0.5)" }}>
+        <span className="text-xs mt-1" style={{ color: "rgba(40,15,5,0.55)" }}>
           dari 100
         </span>
       </div>
@@ -64,7 +64,7 @@ function ScoreBlocks({ score, max = 5 }: { score: number; max?: number }) {
           style={{
             width: "clamp(30px, 7vw, 40px)",
             height: "clamp(30px, 7vw, 40px)",
-            background: i < score ? "#22c55e" : "rgba(60,30,10,0.15)",
+            background: i < score ? "#22c55e" : "rgba(40,15,5,0.18)",
           }}
         />
       ))}
@@ -199,7 +199,7 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
         style={{
           maxWidth: 460,
           maxHeight: "calc(100vh - 5.5rem)",
-          background: "#F0DCC4",
+          background: "#C8946A",
           boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
         }}
       >
@@ -219,11 +219,11 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
             {metrics.map((m) => (
               <div key={m.label} className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold" style={{ color: "#3B1F0A" }}>
+                  <span className="text-sm font-bold" style={{ color: "#3B1A06" }}>
                     {m.label}
                   </span>
-                  <span className="text-sm font-bold text-green-600">
-                    {m.score}<span className="text-xs font-normal text-gray-500">/5</span>
+                  <span className="text-sm font-bold text-green-700">
+                    {m.score}<span className="text-xs font-normal" style={{ color: "rgba(40,15,5,0.45)" }}>/5</span>
                   </span>
                 </div>
                 <ScoreBlocks score={m.score} />
@@ -235,12 +235,12 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
           {feedback && (
             <div
               className="rounded-xl p-4 space-y-1.5"
-              style={{ background: "rgba(60,20,0,0.08)", border: "1px solid rgba(60,20,0,0.1)" }}
+              style={{ background: "rgba(0,0,0,0.08)", border: "1px solid rgba(0,0,0,0.12)" }}
             >
-              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#7A4A20" }}>
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#5A2808" }}>
                 Catatan Juri
               </p>
-              <p className="text-sm leading-relaxed italic" style={{ color: "#4A2810" }}>
+              <p className="text-sm leading-relaxed italic" style={{ color: "#3B1A06" }}>
                 &ldquo;{feedback}&rdquo;
               </p>
             </div>

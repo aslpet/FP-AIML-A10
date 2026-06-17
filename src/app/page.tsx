@@ -107,11 +107,11 @@ export default function TodayPage() {
           <div
             className="absolute pointer-events-none select-none"
             style={{
-              right: "-3%",
-              top: "-6%",
-              width: "clamp(320px, 58vw, 620px)",
-              transform: "rotate(22deg)",
-              transformOrigin: "top right",
+              right: "-2%",
+              top: "2%",
+              width: "clamp(200px, 36vw, 540px)",
+              transform: "rotate(25.95deg)",
+              transformOrigin: "top center",
               zIndex: 0,
             }}
           >
@@ -144,14 +144,32 @@ export default function TodayPage() {
           </div>
         </div>
 
-        <div className="relative z-10 flex flex-col items-center pb-7 gap-2 select-none">
+        {/* Bottom gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/50 to-transparent pointer-events-none z-10" />
+
+        <div className="relative z-20 flex items-end justify-center pb-6 select-none">
           <button
             onClick={scrollToMotion}
-            className="flex items-center gap-4 group cursor-pointer hover:opacity-80 smooth-transition"
+            className="flex items-center gap-6 cursor-pointer hover:opacity-75 smooth-transition"
           >
-            <Image src="/assets/button/arrow-down.svg" alt="" width={46} height={89} className="w-5 h-auto animate-bounce" />
-            <span className="text-white/70 text-sm tracking-[0.2em] font-medium">scroll down</span>
-            <Image src="/assets/button/arrow-down.svg" alt="" width={46} height={89} className="w-5 h-auto animate-bounce" style={{ animationDelay: "0.15s" }} />
+            <span
+              className="font-game text-white/80 leading-none"
+              style={{ fontSize: "clamp(28px, 4.5vw, 72px)", display: "inline-block", transform: "rotate(90deg)", letterSpacing: "-0.12em" }}
+            >
+              {`>>`}
+            </span>
+            <span
+              className="font-game text-white/80"
+              style={{ fontSize: "clamp(28px, 4.5vw, 72px)" }}
+            >
+              scroll down
+            </span>
+            <span
+              className="font-game text-white/80 leading-none"
+              style={{ fontSize: "clamp(28px, 4.5vw, 72px)", display: "inline-block", transform: "rotate(90deg)", letterSpacing: "-0.12em" }}
+            >
+              {`>>`}
+            </span>
           </button>
         </div>
       </section>
