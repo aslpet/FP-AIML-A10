@@ -28,7 +28,7 @@ type Phase = "thinking" | "await" | "done";
 // Use big bubble when text is longer than ~3-4 lines worth of chars
 const BIG_THRESHOLD = 160;
 
-const PHOTO_W = "clamp(38px, 5vw, 60px)";
+const PHOTO_W = "clamp(70px, 10vw, 150px)";
 
 function ChatBubble({ role, content, userAvatar }: { role: "ai" | "user"; content: string; userAvatar: string | null }) {
   const isAI = role === "ai";
@@ -40,10 +40,22 @@ function ChatBubble({ role, content, userAvatar }: { role: "ai" | "user"; conten
 
   const dims = isBig ? { w: 917, h: 303 } : { w: 887, h: 218 };
 
-  const pl = isAI ? (isBig ? "14%" : "14%") : (isBig ? "9%" : "5%");
-  const pr = isAI ? (isBig ? "9%" : "5%") : (isBig ? "15%" : "14%");
-  const pt = isBig ? "9%" : "11%";
-  const pb = isBig ? "12%" : "11%";
+  // Padding Left (Batas Kiri teks)
+  const pl = isAI ? (isBig ? "15%" : "16%") : (isBig ? "16%" : "8%");
+  // Padding Right (Batas Kanan teks)
+  const pr = isAI ? (isBig ? "15%" : "8%") : (isBig ? "16%" : "16%");
+  
+  // Padding Top (Jarak atas teks)
+  const pt = isBig ? "8%" : "10%";
+  // Padding Bottom (Jarak bawah teks)
+  const pb = isBig ? "8%" : "10%";
+
+  // PERUBAHAN PENTING: Menentukan tinggi maksimal area teks agar tidak jebol ke bawah SVG.
+  // Nilai ini adalah persentase dari tinggi keseluruhan gambar bubble (SVG).
+  // Jika teks masih menembus ke bawah kotak hitam, KECILKAN angka persentase ini (misal: "65%", "60%").
+  // Jika area teks terasa terlalu sempit di dalam kotak hitam, BESARKAN angka ini.
+  const maxH = isBig ? "70%" : "70%"; 
+  // ---------------------------------------------------------------------------------
 
   return (
     <motion.div
@@ -58,48 +70,51 @@ function ChatBubble({ role, content, userAvatar }: { role: "ai" | "user"; conten
         width: "clamp(240px, 74vw, 740px)",
       }}
     >
-      {/* AI persona polaroid — left of AI bubble */}
+      {/* AI side — box-profil.svg frame */}
       {isAI && (
         <div
-          className="bg-white shadow-lg flex-shrink-0"
-          style={{
-            padding: "3px 3px 13px 3px",
-            width: PHOTO_W,
-            transform: "rotate(-4deg)",
+          className="flex-shrink-0"
+          style={{ 
+            width: PHOTO_W, 
+            transform: "rotate(-4deg)", 
             transformOrigin: "bottom center",
+            // PERUBAHAN: Tambahkan baris ini untuk mendorong profil AI ke atas
+            marginBottom: "clamp(30px, 5vw, 44px)" 
           }}
         >
-          <div className="bg-zinc-900 w-full" style={{ aspectRatio: "1" }} />
+          <Image src="/assets/box-profil.svg" alt="" width={240} height={189} className="w-full h-auto drop-shadow-lg" />
         </div>
       )}
 
       {/* Bubble */}
       <div className="relative flex-1 min-w-0">
-        <Image src={src} alt="" width={dims.w} height={dims.h} className="w-full h-auto" />
+        <Image src={src} alt="" width={dims.w} height={dims.h} className="w-full h-auto block" />
         <div
-          className="absolute inset-0 flex items-center overflow-hidden"
+          className="absolute inset-0 flex flex-col justify-center"
           style={{ paddingLeft: pl, paddingRight: pr, paddingTop: pt, paddingBottom: pb }}
         >
-          <p className="text-white text-xs sm:text-sm leading-snug font-medium">
-            {content}
-          </p>
+          {/* PERUBAHAN PENTING: Wadah inilah yang sekarang diatur tingginya dan dibuat scrollable */}
+          <div 
+            className="w-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            style={{ maxHeight: maxH }}
+          >
+            <p className="text-white text-[10px] sm:text-xs md:text-sm leading-relaxed font-medium">
+              {content}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* User profile box — right of user bubble */}
+      {/* User side — box-profil(inverse).svg frame with optional photo */}
       {!isAI && (
         <div
           className="flex-shrink-0"
-          style={{
-            width: PHOTO_W,
-            transform: "rotate(5deg)",
-            transformOrigin: "bottom center",
-          }}
+          style={{ width: PHOTO_W, transform: "rotate(5deg)", transformOrigin: "bottom center" }}
         >
           {userAvatar ? (
             <div className="relative w-full" style={{ aspectRatio: "240/189" }}>
               <Image
-                src="/assets/box-profil.svg"
+                src="/assets/box-profil(inverse).svg"
                 alt=""
                 width={240}
                 height={189}
@@ -115,7 +130,7 @@ function ChatBubble({ role, content, userAvatar }: { role: "ai" | "user"; conten
             </div>
           ) : (
             <Image
-              src="/assets/box-profil.svg"
+              src="/assets/box-profil(inverse).svg"
               alt=""
               width={240}
               height={189}
@@ -170,6 +185,8 @@ export default function ArenaPage({
         setTurns(mapped);
         setRound(today.current_round === 0 ? 1 : today.current_round);
         setPhase(today.state === "finished" ? "done" : "await");
+        // Always greet the user with the mosi on entry
+        setShowMosi(true);
       } catch {
         showToast("Gagal memuat sesi");
       } finally {
@@ -241,11 +258,11 @@ export default function ArenaPage({
         />
       </div>
 
-      {/* ── Top-left: folder tab + AI persona polaroid ── */}
-      <div className="absolute top-3 left-3 z-20 flex items-end gap-2">
+      {/* ── Top-left: folder tab (mosi viewer) ── */}
+      <div className="absolute top-8 sm:top-10 left-3 sm:left-6 z-20">
         <motion.button
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.94 }}
+          whileHover={{ scale: 1.1, rotate: -3 }}
+          whileTap={{ scale: 0.92 }}
           onClick={() => setShowMosi(true)}
           className="cursor-pointer"
           title="Lihat Mosi"
@@ -255,63 +272,39 @@ export default function ArenaPage({
             alt="Mosi"
             width={781}
             height={781}
-            style={{ width: "clamp(38px, 5vw, 56px)", height: "auto" }}
+            style={{ width: "clamp(56px, 8vw, 90px)", height: "auto" }}
             priority
           />
         </motion.button>
-
-        {/* AI Persona — polaroid frame */}
-        <div
-          className="bg-white shadow-2xl flex-shrink-0"
-          style={{
-            padding: "4px 4px 18px 4px",
-            width: "clamp(54px, 7.5vw, 90px)",
-            transform: "rotate(-5deg)",
-            transformOrigin: "bottom left",
-          }}
-        >
-          <div className="bg-zinc-900 w-full" style={{ aspectRatio: "1" }} />
-        </div>
       </div>
 
-      {/* ── Top-right: round indicator + user profile box ── */}
-      <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
-        <div className="flex items-center gap-1.5">
-          {[1, 2, 3].map((r) => (
-            <div
-              key={r}
-              className="w-2.5 h-2.5 rounded-full border-2 border-white/80 transition-all"
-              style={{ background: r <= displayRound ? "white" : "transparent" }}
-            />
-          ))}
-          <span className="text-white/80 text-xs font-bold ml-1 select-none">
-            {displayRound}/3
-          </span>
-        </div>
-
-        {/* User profile box */}
-        <div
-          style={{
-            width: "clamp(54px, 7.5vw, 90px)",
-            transform: "rotate(5deg)",
-            transformOrigin: "bottom right",
-          }}
-        >
-          <Image
-            src="/assets/box-profil.svg"
-            alt="Profil"
-            width={240}
-            height={189}
-            className="w-full h-auto drop-shadow-lg"
+      {/* ── Top-right: round indicator ── */}
+      <div className="absolute top-8 sm:top-10 right-3 sm:right-6 z-20 flex items-center gap-2">
+        {[1, 2, 3].map((r) => (
+          <div
+            key={r}
+            className="rounded-full border-2 border-white/90 transition-all duration-300 shadow-md"
+            style={{
+              width: "clamp(12px, 1.8vw, 20px)",
+              height: "clamp(12px, 1.8vw, 20px)",
+              background: r <= displayRound ? "white" : "rgba(255,255,255,0.1)",
+              boxShadow: r <= displayRound ? "0 0 8px rgba(255,255,255,0.6)" : "none",
+            }}
           />
-        </div>
+        ))}
+        <span
+          className="text-white/90 font-bold select-none ml-0.5"
+          style={{ fontSize: "clamp(14px, 2vw, 20px)", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}
+        >
+          {displayRound}/3
+        </span>
       </div>
 
       {/* ── Chat area — scrollable, all messages ── */}
       <div
         className="absolute left-0 right-0 overflow-y-auto"
         style={{
-          top: "clamp(86px, 13vw, 124px)",
+          top: "clamp(64px, 9.5vw, 96px)",
           bottom: `calc(${inputBarH} + 20px)`,
           paddingLeft: "clamp(10px, 2.5vw, 32px)",
           paddingRight: "clamp(10px, 2.5vw, 32px)",
@@ -337,10 +330,10 @@ export default function ArenaPage({
               }}
             >
               <div
-                className="bg-white shadow-lg flex-shrink-0"
-                style={{ padding: "3px 3px 13px 3px", width: PHOTO_W, transform: "rotate(-4deg)", transformOrigin: "bottom center" }}
+                className="flex-shrink-0"
+                style={{ width: PHOTO_W, transform: "rotate(-4deg)", transformOrigin: "bottom center" }}
               >
-                <div className="bg-zinc-900 w-full" style={{ aspectRatio: "1" }} />
+                <Image src="/assets/box-profil.svg" alt="" width={240} height={189} className="w-full h-auto drop-shadow-lg" />
               </div>
               <div className="relative" style={{ width: "clamp(120px, 20vw, 220px)" }}>
                 <Image src="/assets/chat-small.svg" alt="" width={887} height={218} className="w-full h-auto" />
@@ -380,21 +373,29 @@ export default function ArenaPage({
               alt=""
               width={60}
               height={60}
-              style={{ width: "clamp(32px, 4.5vw, 56px)", height: "auto" }}
+              style={{ width: "clamp(42px, 6vw, 72px)", height: "auto" }}
             />
-            <Image
-              src="/assets/button/button-statistik.svg"
-              alt="Lihat Statistik Debat"
-              width={480}
-              height={80}
-              style={{ width: "clamp(180px, 38vw, 460px)", height: "auto" }}
-            />
+            <div className="relative">
+              <Image
+                src="/assets/button/button-statistik.svg"
+                alt="Lihat Statistik Debat"
+                width={480}
+                height={80}
+                style={{ width: "clamp(220px, 48vw, 560px)", height: "auto" }}
+              />
+              <span
+                className="absolute inset-0 flex items-center justify-center font-game text-white select-none"
+                style={{ fontSize: "clamp(14px, 2.4vw, 28px)", letterSpacing: "0.12em", textShadow: "1px 1px 3px rgba(0,0,0,0.7)" }}
+              >
+                LIHAT STATISTIK
+              </span>
+            </div>
             <Image
               src="/assets/statistik-right.svg"
               alt=""
               width={60}
               height={60}
-              style={{ width: "clamp(32px, 4.5vw, 56px)", height: "auto" }}
+              style={{ width: "clamp(42px, 6vw, 72px)", height: "auto" }}
             />
           </motion.button>
         </div>
@@ -406,24 +407,32 @@ export default function ArenaPage({
           >
             {/* chat-answer.svg (white parallelogram) */}
             <div className="relative min-w-0" style={{ flex: 961 }}>
-              <Image src="/assets/chat-answer.svg" alt="" fill className="object-fill" />
+              <Image src="/assets/chat-answer.svg" alt="" fill className="object-fill z-0" />
+              
+              {/* LAYER 1: PENGATURAN BATAS TEKS (Menggunakan Posisi Absolut) */}
               <div
-                className="absolute inset-0 flex items-center"
-                style={{ paddingLeft: "9%", paddingRight: "3%", paddingTop: "7%", paddingBottom: "7%" }}
+                className="absolute z-10 flex flex-col justify-center"
+                style={{ 
+                  left: "21%",   // Batas kiri (atur jika teks menabrak garis miring kiri)
+                  right: "21%",   // Batas kanan 
+                  top: "16%",    // Batas atas (atur tinggi maksimal teks dari atas)
+                  bottom: "16%"  // Batas bawah (atur tinggi maksimal teks dari bawah)
+                }}
               >
                 {phase === "await" ? (
-                  <input
-                    type="text"
+                  /* LAYER 2: TEXTAREA SCROLLABLE */
+                  <textarea
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
                         handleSubmit();
                       }
                     }}
                     placeholder="Argumen kamu ....."
-                    className="w-full bg-transparent text-zinc-800 placeholder-zinc-500 text-sm sm:text-base font-medium outline-none"
+                    // w-full dan h-full memastikan teks hanya sebatas ruang yang diapit top/bottom/left/right di atas
+                    className="w-full h-full bg-transparent text-zinc-800 placeholder-zinc-500 text-sm sm:text-base font-medium outline-none resize-none overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                     autoFocus
                   />
                 ) : (
@@ -475,7 +484,7 @@ export default function ArenaPage({
               exit={{ scale: 0.82, y: 40 }}
               transition={{ type: "spring", stiffness: 280, damping: 24 }}
               className="relative"
-              style={{ width: "clamp(200px, 34vw, 380px)" }}
+              style={{ width: "clamp(260px, 42vw, 500px)" }}
               onClick={(e) => e.stopPropagation()}
             >
               <Image
@@ -486,30 +495,30 @@ export default function ArenaPage({
                 className="w-full h-auto drop-shadow-2xl"
               />
               <div className="absolute inset-0 pointer-events-none" style={{ transform: "rotate(-2deg)" }}>
+                {/* Category badge */}
                 <div
                   className="absolute flex items-center justify-center"
                   style={{ top: "19%", left: "13%", width: "30%", height: "10%" }}
                 >
                   <span
                     className="font-bold text-center"
-                    style={{ color: "#26170A", fontSize: "clamp(8px, 1.6vw, 13px)" }}
+                    style={{ color: "#26170A", fontSize: "clamp(9px, 1.7vw, 15px)" }}
                   >
                     {category}
                   </span>
                 </div>
+                {/* Motion text — no clamp, overflow-y scroll if needed */}
                 <div
-                  className="absolute overflow-hidden flex items-start justify-center"
-                  style={{ top: "39%", left: "15%", width: "53%", height: "40%", paddingTop: "4%" }}
+                  className="absolute flex items-start justify-center overflow-y-auto"
+                  style={{ top: "38%", left: "13%", width: "56%", height: "42%", paddingTop: "3%" }}
                 >
                   <p
-                    className="text-center leading-snug italic"
+                    className="text-center leading-relaxed"
                     style={{
-                      color: "#3d2a1a",
-                      fontSize: "clamp(7px, 1.4vw, 11px)",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
+                      color: "#000000",
+                      fontSize: "clamp(20px, 1.7vw, 20px)",
+                      fontWeight: 500,
+                      fontStyle: "italic",
                     }}
                   >
                     &ldquo;{motionData?.motion_text ?? motionData?.context}&rdquo;

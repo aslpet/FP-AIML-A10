@@ -2,7 +2,7 @@
 <rect y="-56.0078" width="626.047" height="1164.78" transform="rotate(-1.95061 0 -56.0078)" fill="url(#pattern0_38_395)"/>
 <rect x="41.7969" y="137.741" width="448.636" height="775.592" rx="10" transform="rotate(-1.95061 41.7969 137.741)" fill="#E4D2B5"/>
 <rect x="82.5488" y="184.699" width="187.256" height="99.5326" rx="6" transform="rotate(-2.80878 82.5488 184.699)" fill="#C69657"/>
-<rect x="99.0742" y="369.735" width="350.093" height="436.807" rx="6" transform="rotate(-2.8199 99.0742 369.735)" fill="#D9D9D9"/>
+<rect x="99.0742" y="369.735" width="350.093" height="436.807" rx="6" transform="rotate(-2.8199 99.0742 369.735)" fill="none"/>
 <defs>
 <pattern id="pattern0_38_395" patternContentUnits="objectBoundingBox" width="1" height="1">
 <use xlink:href="#image0_38_395" transform="matrix(0.00148368 0 0 0.000797448 -0.860534 0)"/>
