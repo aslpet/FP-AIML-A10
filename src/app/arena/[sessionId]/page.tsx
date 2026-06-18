@@ -34,8 +34,8 @@ const PERSONA_IMAGE: Record<string, string> = {
   penuntut:   "/assets/persona/mybini.jpg",
   skeptis:    "/assets/persona/kucing.jpg",
   pragmatis:  "/assets/persona/carte.jpg",
-  idealis:    "/assets/persona/mybini.jpg",
-  analis_data: "/assets/persona/mybini.jpg",
+  idealis:    "/assets/persona/mr.webp",
+  analis_data: "/assets/persona/sigma.jpg",
 };
 
 function ChatBubble({ role, content, userAvatar, personaImage }: { role: "ai" | "user"; content: string; userAvatar: string | null; personaImage: string | null }) {

@@ -36,7 +36,7 @@ const PERSONAS: PersonaData[] = [
     id: "idealis",
     name: "Sang Idealis",
     desc: 'gugat dari nilai/etika ("sekalipun efektif, apakah adil?")',
-    image: "/assets/persona/mybini.jpg",
+    image: "/assets/persona/mr.webp",
   },
   {
     id: "analis_data",
@@ -47,7 +47,7 @@ const PERSONAS: PersonaData[] = [
         <strong>TIDAK</strong> memvalidasi kebenaran fakta
       </>
     ),
-    image: "/assets/persona/mybini.jpg",
+    image: "/assets/persona/sigma.jpg",
   },
 ];
 

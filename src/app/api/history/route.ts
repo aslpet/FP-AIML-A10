@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
   const { data: sessions } = await query;
 
   const items = (sessions ?? []).map((s) => ({
+    session_id: s.session_id,
     play_date: s.play_date,
     category: s.category,
     motion_text: (s.motion_id as unknown as { motion_text: string })?.motion_text || "",
