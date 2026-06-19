@@ -365,7 +365,7 @@ function MotionCarousel({
                     className="font-bold leading-tight text-center"
                     style={{
                       color: "#3B1A06",
-                      fontSize: "clamp(7px, 1.3vw, 11px)",
+                      fontSize: "clamp(12px, 1.3vw, 20px)",
                       display: "-webkit-box",
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: "vertical",
@@ -381,7 +381,7 @@ function MotionCarousel({
                   <div
                     className="absolute flex items-start justify-center overflow-hidden"
                     style={{
-                      top: "30%", // Diturunkan sedikit agar tidak terlalu menempel dengan label kategori
+                      top: "40%", // Diturunkan sedikit agar tidak terlalu menempel dengan label kategori
                       
                       // PERUBAHAN 1: Mempersempit area agar pas di tengah "kertas"
                       left: "22%",  // Digeser sedikit ke dalam dari kiri
