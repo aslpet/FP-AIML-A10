@@ -32,22 +32,22 @@ describe("Aggregate (TRD-05 §3)", () => {
       kejelasan: 1,
     };
     // raw = 0.35*5 + 0.25*1 + 0.25*1 + 0.15*1 = 1.75+0.25+0.25+0.15 = 2.4
-    // total = round((2.4-1)/4*100) = round(35) = 35
-    // relevansi <= 2 → gate ×0.5 → 18
+    // norm = (2.4-1)/4 = 0.35 → total = round(0.35^0.8 * 100) = round(43.2) = 43
+    // relevansi <= 2 → gate ×0.5 → round(21.6) = 22
     const result = aggregate(scores);
-    expect(result).toBe(18);
+    expect(result).toBe(22);
   });
 
-  it("skor 3 di semua dimensi → 50", () => {
+  it("skor 3 di semua dimensi → 57", () => {
     const scores: DimensionScores = {
       penalaran: 3,
       relevansi: 3,
       responsiveness: 3,
       kejelasan: 3,
     };
-    // raw = 3 (karena semua bobot sum = 1)
-    // total = round((3-1)/4*100) = round(50) = 50
-    expect(aggregate(scores)).toBe(50);
+    // raw = 3 (karena semua bobot sum = 1), norm = 0.5
+    // total = round(0.5^0.8 * 100) = round(57.4) = 57
+    expect(aggregate(scores)).toBe(57);
   });
 
   describe("Gate Relevansi (FR-39)", () => {
@@ -59,10 +59,10 @@ describe("Aggregate (TRD-05 §3)", () => {
         kejelasan: 4,
       };
       // raw = 0.35*5 + 0.25*2 + 0.25*4 + 0.15*4 = 1.75+0.5+1+0.6 = 3.85
-      // total = round((3.85-1)/4*100) = round(71.25) = 71
-      // gate: ×0.5 → 36
+      // norm = (3.85-1)/4 = 0.7125 → total = round(0.7125^0.8 * 100) = round(76.2) = 76
+      // gate: ×0.5 → round(38.1) = 38
       const withGate = aggregate(high);
-      expect(withGate).toBe(36);
+      expect(withGate).toBe(38);
 
       // Bandingkan tanpa gate (relevansi >2)
       const noGate: DimensionScores = {
@@ -72,7 +72,7 @@ describe("Aggregate (TRD-05 §3)", () => {
         kejelasan: 4,
       };
       // raw = 0.35*5 + 0.25*3 + 0.25*4 + 0.15*4 = 1.75+0.75+1+0.6 = 4.1
-      // total = round((4.1-1)/4*100) = round(77.5) = 78
+      // norm = (4.1-1)/4 = 0.775 → total = round(0.775^0.8 * 100) = round(81.6) = 82
       const withoutGate = aggregate(noGate);
       expect(withoutGate).toBeGreaterThan(withGate);
     });
@@ -84,7 +84,7 @@ describe("Aggregate (TRD-05 §3)", () => {
         responsiveness: 3,
         kejelasan: 3,
       };
-      expect(aggregate(scores)).toBe(50); // tidak di-cap
+      expect(aggregate(scores)).toBe(57); // tidak di-cap
     });
   });
 

@@ -88,7 +88,7 @@ export default function HistoryPage() {
       >
         {/* Panel header */}
         <div
-          className="flex items-center justify-between px-5 py-3"
+          className="flex items-center px-5 py-3"
           style={{ borderBottom: "1.5px solid rgba(255,255,255,0.15)" }}
         >
           <h1
@@ -97,12 +97,6 @@ export default function HistoryPage() {
           >
             History Game
           </h1>
-          <span
-            className="text-white/70 select-none"
-            style={{ fontSize: "clamp(20px, 3vw, 28px)" }}
-          >
-            ≡
-          </span>
         </div>
 
         {/* Column headers */}

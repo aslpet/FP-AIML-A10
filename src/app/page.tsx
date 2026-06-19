@@ -288,8 +288,9 @@ function MotionCarousel({
           {/* Prev-2 — sliver far left, clickable */}
           {hasPrev2 && (
             <motion.div
-              animate={{ opacity: 0.22 }}
-              whileHover={{ opacity: 0.42, scale: 1.04 }}
+              initial={{ rotate: -9, opacity: 0.22 }}
+              animate={{ rotate: -9, opacity: 0.22 }}
+              whileHover={{ rotate: -9, opacity: 0.42, scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.18 }}
               onClick={onPrev}
@@ -298,7 +299,6 @@ function MotionCarousel({
                 width: SIDE2_W,
                 top: "9%",
                 right: "67%",
-                transform: "rotate(-9deg)",
                 transformOrigin: "bottom right",
                 zIndex: 1,
               }}
@@ -310,8 +310,9 @@ function MotionCarousel({
           {/* Prev-1 — closely behind center left, clickable */}
           {hasPrev1 && (
             <motion.div
-              animate={{ opacity: 0.54 }}
-              whileHover={{ opacity: 0.8, scale: 1.04 }}
+              initial={{ rotate: -5, opacity: 0.54 }}
+              animate={{ rotate: -5, opacity: 0.54 }}
+              whileHover={{ rotate: -5, opacity: 0.8, scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.18 }}
               onClick={onPrev}
@@ -320,7 +321,6 @@ function MotionCarousel({
                 width: SIDE1_W,
                 top: "5%",
                 right: "55%",
-                transform: "rotate(-5deg)",
                 transformOrigin: "bottom right",
                 zIndex: 2,
               }}
@@ -446,8 +446,9 @@ function MotionCarousel({
           {/* Next-1 — closely behind center right, clickable */}
           {hasNext1 && (
             <motion.div
-              animate={{ opacity: 0.54 }}
-              whileHover={{ opacity: 0.8, scale: 1.04 }}
+              initial={{ rotate: 5, opacity: 0.54 }}
+              animate={{ rotate: 5, opacity: 0.54 }}
+              whileHover={{ rotate: 5, opacity: 0.8, scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.18 }}
               onClick={onNext}
@@ -456,7 +457,6 @@ function MotionCarousel({
                 width: SIDE1_W,
                 top: "5%",
                 left: "55%",
-                transform: "rotate(5deg)",
                 transformOrigin: "bottom left",
                 zIndex: 2,
               }}
@@ -468,8 +468,9 @@ function MotionCarousel({
           {/* Next-2 — sliver far right, clickable */}
           {hasNext2 && (
             <motion.div
-              animate={{ opacity: 0.22 }}
-              whileHover={{ opacity: 0.42, scale: 1.04 }}
+              initial={{ rotate: 9, opacity: 0.22 }}
+              animate={{ rotate: 9, opacity: 0.22 }}
+              whileHover={{ rotate: 9, opacity: 0.42, scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.18 }}
               onClick={onNext}
@@ -478,7 +479,6 @@ function MotionCarousel({
                 width: SIDE2_W,
                 top: "9%",
                 left: "67%",
-                transform: "rotate(9deg)",
                 transformOrigin: "bottom left",
                 zIndex: 1,
               }}

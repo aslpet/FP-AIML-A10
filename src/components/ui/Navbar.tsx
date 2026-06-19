@@ -62,8 +62,8 @@ export function Navbar() {
             <Image
               src="/assets/title.svg"
               alt="debat.In logo"
-              width={150}
-              height={40}
+              width={956}
+              height={225}
               className="h-8 sm:h-10 w-auto transition-opacity group-hover:opacity-80 drop-shadow-md"
               priority
             />

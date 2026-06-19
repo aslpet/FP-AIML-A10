@@ -76,7 +76,12 @@ Dari artikel berikut, lakukan langkah-langkah ini:
 
 3. Hasilkan SAMPAI 3 kandidat mosi debat lintas bentuk klaim (kebijakan/fakta/nilai).
    Tiap kandidat HARUS memiliki:
-   - motion_text: proposisi debat yang jelas dan spesifik
+   - motion_text: proposisi/pernyataan deklaratif yang jelas, spesifik, dan bisa diperdebatkan.
+     WAJIB berupa pernyataan netral tanpa pihak/subjek lembaga. DILARANG memakai format
+     mosi parlementer — JANGAN awali dengan "Dewan ini…", "Sidang ini…", "Majelis…",
+     "Rumah ini…", atau "This House…". Tulis langsung proposisinya.
+     Contoh BENAR: "Sertifikasi halal wajib menjadi syarat akses bantuan modal negara bagi UMKM."
+     Contoh SALAH: "Dewan ini mewajibkan UMKM memiliki sertifikasi halal…"
    - context: 1–2 kalimat latar NETRAL (tidak memihak)
    - claim_form: "kebijakan" | "fakta" | "nilai"
 

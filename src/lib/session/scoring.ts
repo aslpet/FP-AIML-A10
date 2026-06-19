@@ -20,6 +20,13 @@ const WEIGHTS = {
 } as const;
 
 /**
+ * Kurva kemurahan penilaian. Diterapkan pada nilai ternormalisasi (0..1).
+ * < 1 = lebih murah hati (mengangkat skor menengah–tinggi); 1 = linear; > 1 = lebih ketat.
+ * Mis. γ=0.8: dimensi rata-rata 4 → ~79, campuran 4/5/4/5 → ~88, semua-5 → 100.
+ */
+const GENEROSITY = 0.8;
+
+/**
  * Agregasi skor 4 dimensi (1–5) → 0–100.
  * Menerapkan gate relevansi: jika Relevansi ≤ 2, total di-cap ×0.5.
  * Acuan: TRD-05 §3
@@ -31,8 +38,9 @@ export function aggregate(scores: DimensionScores): number {
     WEIGHTS.responsiveness * scores.responsiveness +
     WEIGHTS.kejelasan * scores.kejelasan;
 
-  // Rescale 1..5 → 0..100
-  let total = Math.round(((raw - 1) / 4) * 100);
+  // Normalisasi 1..5 → 0..1, lalu lembutkan dengan kurva kemurahan
+  const norm = clamp((raw - 1) / 4, 0, 1);
+  let total = Math.round(Math.pow(norm, GENEROSITY) * 100);
   total = clamp(total, 0, 100);
 
   // Gate relevansi (FR-39)

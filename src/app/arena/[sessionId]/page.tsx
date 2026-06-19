@@ -33,7 +33,7 @@ const PHOTO_W = "clamp(70px, 10vw, 150px)";
 const PERSONA_IMAGE: Record<string, string> = {
   penuntut:   "/assets/persona/mybini.jpg",
   skeptis:    "/assets/persona/kucing.jpg",
-  pragmatis:  "/assets/persona/carte.jpg",
+  pragmatis:  "/assets/persona/carte.webp",
   idealis:    "/assets/persona/mr.webp",
   analis_data: "/assets/persona/sigma.jpg",
 };
@@ -53,16 +53,16 @@ function ChatBubble({ role, content, userAvatar, personaImage }: { role: "ai" | 
   // Padding Right (Batas Kanan teks)
   const pr = isAI ? (isBig ? "15%" : "8%") : (isBig ? "16%" : "16%");
   
-  // Padding Top (Jarak atas teks)
-  const pt = isBig ? "8%" : "10%";
-  // Padding Bottom (Jarak bawah teks)
-  const pb = isBig ? "8%" : "10%";
+  // Padding Top (Jarak atas teks) — dikecilkan agar area teks lebih lega ke atas
+  const pt = isBig ? "6%" : "7%";
+  // Padding Bottom (Jarak bawah teks) — dikecilkan agar area teks lebih lega ke bawah
+  const pb = isBig ? "6%" : "7%";
 
   // PERUBAHAN PENTING: Menentukan tinggi maksimal area teks agar tidak jebol ke bawah SVG.
   // Nilai ini adalah persentase dari tinggi keseluruhan gambar bubble (SVG).
   // Jika teks masih menembus ke bawah kotak hitam, KECILKAN angka persentase ini (misal: "65%", "60%").
   // Jika area teks terasa terlalu sempit di dalam kotak hitam, BESARKAN angka ini.
-  const maxH = isBig ? "70%" : "70%"; 
+  const maxH = isBig ? "80%" : "80%";
   // ---------------------------------------------------------------------------------
 
   return (
@@ -116,7 +116,9 @@ function ChatBubble({ role, content, userAvatar, personaImage }: { role: "ai" | 
             className="w-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
             style={{ maxHeight: maxH }}
           >
-            <p className="text-white text-[10px] sm:text-xs md:text-sm leading-relaxed font-medium">
+            {/* Ukuran teks chat — naikkan/turunkan di sini (mobile / sm / md).
+                Saat ini: 12px → 14px → 16px. */}
+            <p className="text-white text-[12px] sm:text-[14px] md:text-[16px] leading-relaxed font-medium">
               {content}
             </p>
           </div>
@@ -515,11 +517,11 @@ export default function ArenaPage({
                 {/* Category badge */}
                 <div
                   className="absolute flex items-center justify-center"
-                  style={{ top: "19%", left: "13%", width: "30%", height: "10%" }}
+                  style={{ top: "19%", left: "13%", width: "30%", height: "8%" }}
                 >
                   <span
-                    className="font-bold text-center"
-                    style={{ color: "#26170A", fontSize: "clamp(9px, 1.7vw, 15px)" }}
+                    className="font-bold text-center leading-tight"
+                    style={{ color: "#26170A", fontSize: "clamp(20px, 2.3vw, 24px)" }}
                   >
                     {category}
                   </span>
@@ -533,7 +535,8 @@ export default function ArenaPage({
                     className="text-center leading-relaxed"
                     style={{
                       color: "#000000",
-                      fontSize: "clamp(20px, 1.7vw, 20px)",
+                      // Ukuran teks topik mosi — atur di sini: clamp(min, preferred, max)
+                      fontSize: "clamp(16px, 2.1vw, 24px)",
                       fontWeight: 500,
                       fontStyle: "italic",
                     }}
