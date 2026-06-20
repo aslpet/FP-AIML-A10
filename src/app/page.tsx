@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import { fetchToday, fetchAllMotions, startSession, getMe } from "@/lib/api";
 import { Toast } from "@/components/ui/Toast";
@@ -16,6 +16,22 @@ const CATEGORY_LABELS: Record<string, string> = {
   lingkungan: "Lingkungan",
 };
 
+// Lebar dasar folder yang meluncur = ukuran kartu mosi di carousel (pose B).
+const FOLDER_W = "clamp(320px, 55vw, 520px)";
+// Posisi folder (titik TENGAH folder, dalam % viewport) dari pose A (hero) ke
+// pose B (kartu mosi). Folder pakai position: fixed, jadi koordinat = viewport.
+// Tweak angka-angka ini kalau posisi awal/akhir belum pas.
+const SLIDE = {
+  leftFrom: "72%",   // pose A: agak ke kanan (seperti folder hero semula)
+  leftTo: "50%",     // pose B: tengah
+  topFrom: "52%",    // pose A: ketinggian folder di hero
+  topTo: "50%",      // pose B: tengah carousel
+  rotateFrom: 25.95, // kemiringan di hero
+  rotateTo: 1,       // hampir tegak saat jadi kartu mosi
+  scaleFrom: 1.15,   // sedikit lebih besar di hero
+  scaleTo: 1,        // ukuran kartu mosi
+};
+
 export default function TodayPage() {
   const router = useRouter();
 
@@ -27,6 +43,18 @@ export default function TodayPage() {
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [starting, setStarting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+
+  // ── Shared-folder slide (pose A = hero top-right, pose B = carousel center) ──
+  // Satu folder.svg yang sama meluncur dari hero ke posisi mosi saat scroll.
+  // Angka di bawah ini bisa di-tweak untuk pas-kan posisi akhir.
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const folderLeft = useTransform(scrollYProgress, [0, 1], [SLIDE.leftFrom, SLIDE.leftTo]);
+  const folderTop = useTransform(scrollYProgress, [0, 1], [SLIDE.topFrom, SLIDE.topTo]);
+  const folderRotate = useTransform(scrollYProgress, [0, 1], [SLIDE.rotateFrom, SLIDE.rotateTo]);
+  const folderScale = useTransform(scrollYProgress, [0, 1], [SLIDE.scaleFrom, SLIDE.scaleTo]);
+  // Konten mosi (badge + teks) baru muncul saat folder mendekati posisi bawah
+  const folderContentOpacity = useTransform(scrollYProgress, [0, 0.6, 0.85], [0, 0, 1]);
 
   useEffect(() => {
     async function load() {
@@ -86,12 +114,132 @@ export default function TodayPage() {
   const dailyDone: boolean = allMotions?.daily_done ?? false;
   const currentItem = items[carouselIdx] ?? null;
 
+  // Derived state for the shared folder overlay (mirrors MotionCarousel)
+  const folderCategory = currentItem ? (CATEGORY_LABELS[currentItem.category] ?? currentItem.category) : "";
+  const folderMotionText = currentItem?.motion?.context ?? currentItem?.motion?.motion_text ?? "";
+  const folderLocked = currentItem ? (!currentItem.is_daily && !dailyDone) : false;
+  const folderDone = currentItem?.state === "finished";
+
   return (
     <>
       {/* ═══════════════════════════════════════════
+          Shared folder — SATU folder.svg yang meluncur dari hero (pose A)
+          ke posisi kartu mosi (pose B) saat scroll. position: fixed supaya
+          selalu di atas background; z di antara konten carousel & judul hero.
+      ═══════════════════════════════════════════ */}
+      <motion.div
+        aria-hidden
+        className="fixed pointer-events-none select-none z-[15]"
+        style={{
+          left: folderLeft,
+          top: folderTop,
+          width: FOLDER_W,
+          x: "-50%",
+          y: "-50%",
+          rotate: folderRotate,
+          scale: folderScale,
+          transformOrigin: "center center",
+        }}
+      >
+        <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto drop-shadow-2xl" priority />
+
+        {/* Overlay konten mosi — fade-in saat folder mendekati posisi bawah */}
+        {currentItem && (
+          <motion.div className="absolute inset-0" style={{ opacity: folderContentOpacity }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={carouselIdx}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0"
+              >
+                {/* Category badge — rect: top 13.2% left 24.3% w 31.6% h 12.4% */}
+                <div
+                  className="absolute flex items-center justify-center overflow-hidden"
+                  style={{ top: "13.2%", left: "24.3%", width: "31.6%", height: "12.4%" }}
+                >
+                  <span
+                    className="font-bold leading-tight text-center"
+                    style={{
+                      color: "#3B1A06",
+                      fontSize: "clamp(12px, 1.3vw, 20px)",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {folderCategory}
+                  </span>
+                </div>
+
+                {/* Motion text */}
+                {!folderLocked && (
+                  <div
+                    className="absolute flex items-start justify-center overflow-hidden"
+                    style={{ top: "40%", left: "22%", width: "50%", height: "50%" }}
+                  >
+                    <p
+                      className="text-center leading-relaxed italic"
+                      style={{
+                        color: "#3d2a1a",
+                        fontSize: "clamp(10px, 1.2vw, 16px)",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 8,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      &ldquo;{folderMotionText}&rdquo;
+                    </p>
+                  </div>
+                )}
+
+                {/* Lock overlay */}
+                {folderLocked && (
+                  <div
+                    className="absolute flex flex-col items-center justify-center"
+                    style={{
+                      top: "30%", left: "12%", width: "76%", height: "52%",
+                      background: "rgba(15,5,0,0.65)",
+                      backdropFilter: "blur(3px)",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    <span className="text-2xl">🔒</span>
+                    <p className="text-white/80 text-xs text-center mt-1.5 px-3 leading-snug">
+                      Selesaikan mosi harian<br />terlebih dahulu
+                    </p>
+                  </div>
+                )}
+
+                {/* Done overlay */}
+                {folderDone && (
+                  <div
+                    className="absolute flex items-center justify-center"
+                    style={{ top: "50%", left: "10%", width: "76%", height: "52%" }}
+                  >
+                    <div
+                      className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-lg"
+                      style={{ background: "rgba(22,163,74,0.88)", backdropFilter: "blur(2px)" }}
+                    >
+                      <span className="text-white text-xl">✓</span>
+                      <span className="text-white text-xs font-bold">Sudah Dikerjakan</span>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </motion.div>
+
+      {/* ═══════════════════════════════════════════
           SECTION 1 — Hero
       ═══════════════════════════════════════════ */}
-      <section className="relative h-screen -mt-16 flex flex-col overflow-hidden">
+      <section ref={heroRef} className="relative h-screen -mt-16 flex flex-col overflow-hidden">
 
         <div className="absolute inset-0 z-0">
           <Image
@@ -101,20 +249,6 @@ export default function TodayPage() {
             className="object-cover object-center"
             priority
           />
-        </div>
-
-        {/* Folder decorative — right side */}
-        <div
-          className="absolute pointer-events-none select-none z-10"
-          style={{
-            right: "-1%",
-            top: "15%",
-            width: "clamp(220px, 35vw, 580px)",
-            transform: "rotate(25.95deg)",
-            transformOrigin: "top center",
-          }}
-        >
-          <Image src="/assets/folder.svg" alt="" width={781} height={781} className="w-full h-auto drop-shadow-2xl" priority />
         </div>
 
         {/* Main content — centered with pt-16 to clear the navbar */}
@@ -143,7 +277,7 @@ export default function TodayPage() {
         </div>
 
         {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-20" />
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-10" />
 
         {/* Scroll-down — retro bounce */}
         <div className="relative z-30 flex items-end justify-center pb-8 select-none">
@@ -254,12 +388,8 @@ function MotionCarousel({
   const isLocked = !item.is_daily && !dailyDone;
   const isDone = item.state === "finished";
   const isInProgress = item.state === "in_progress";
-  const categoryLabel = CATEGORY_LABELS[item.category] ?? item.category;
-  const motionText = item.motion?.context ?? item.motion?.motion_text ?? "";
 
-  // Center card — bigger and truly centered
-  const CARD_W = "clamp(320px, 55vw, 520px)";
-  // Side cards — visibly peeking behind center
+  // Side cards — visibly peeking behind the sliding center folder
   const SIDE1_W = "clamp(180px, 35vw, 290px)";
   const SIDE2_W = "clamp(130px, 25vw, 210px)";
 
@@ -297,7 +427,7 @@ function MotionCarousel({
               className="absolute select-none cursor-pointer"
               style={{
                 width: SIDE2_W,
-                top: "9%",
+                top: "40%",
                 right: "67%",
                 transformOrigin: "bottom right",
                 zIndex: 1,
@@ -319,7 +449,7 @@ function MotionCarousel({
               className="absolute select-none cursor-pointer"
               style={{
                 width: SIDE1_W,
-                top: "5%",
+                top: "30%",
                 right: "55%",
                 transformOrigin: "bottom right",
                 zIndex: 2,
@@ -329,119 +459,9 @@ function MotionCarousel({
             </motion.div>
           )}
 
-          {/* Center card — folder.svg, fully visible, truly centered */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIdx}
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.92 }}
-              transition={{ duration: 0.2 }}
-              // PERUBAHAN: Gunakan inset-0, m-auto, dan h-fit agar center vertikal & horizontal
-              className="absolute inset-0 m-auto h-fit select-none"
-              style={{
-                width: CARD_W,
-                zIndex: 4,
-                // top: 0 Dihapus karena sudah di-handle oleh inset-0 m-auto
-              }}
-            >
-              <Image
-                src="/assets/folder.svg"
-                alt="Mosi"
-                width={781}
-                height={781}
-                className="w-full h-auto drop-shadow-2xl"
-                priority
-              />
-
-              {/* ── Overlay: category badge ──
-                  folder.svg badge rect: x=190(24.3%) y=103(13.2%) w=247(31.6%) h=97(12.4%) */}
-              <div className="absolute inset-0 pointer-events-none">
-                <div
-                  className="absolute flex items-center justify-center overflow-hidden"
-                  style={{ top: "13.2%", left: "24.3%", width: "31.6%", height: "12.4%" }}
-                >
-                  <span
-                    className="font-bold leading-tight text-center"
-                    style={{
-                      color: "#3B1A06",
-                      fontSize: "clamp(12px, 1.3vw, 20px)",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {categoryLabel}
-                  </span>
-                </div>
-
-                {/* Motion text */}
-                {!isLocked && (
-                  <div
-                    className="absolute flex items-start justify-center overflow-hidden"
-                    style={{
-                      top: "40%", // Diturunkan sedikit agar tidak terlalu menempel dengan label kategori
-                      
-                      // PERUBAHAN 1: Mempersempit area agar pas di tengah "kertas"
-                      left: "22%",  // Digeser sedikit ke dalam dari kiri
-                      width: "50%", // Lebar dikurangi drastis agar tidak menabrak batas kanan (area tab map)
-                      height: "50%",
-                    }}
-                  >
-                    <p
-                      // PERUBAHAN 2: Menambahkan 'font-semibold' agar teks lebih tebal dan jelas dibaca
-                      className="text-center leading-relaxed italic font-semibold"
-                      style={{
-                        color: "#3d2a1a",
-                        fontSize: "clamp(10px, 1.2vw, 16px)", // Ukuran maksimal dibesarkan sedikit ke 16px
-                        display: "-webkit-box",
-                        WebkitLineClamp: 8,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      &ldquo;{motionText}&rdquo;
-                    </p>
-                  </div>
-                )}
-
-                {/* Lock overlay */}
-                {isLocked && (
-                  <div
-                    className="absolute flex flex-col items-center justify-center"
-                    style={{
-                      top: "30%", left: "12%", width: "76%", height: "52%",
-                      background: "rgba(15,5,0,0.65)",
-                      backdropFilter: "blur(3px)",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    <span className="text-2xl">🔒</span>
-                    <p className="text-white/80 text-xs text-center mt-1.5 px-3 leading-snug">
-                      Selesaikan mosi harian<br />terlebih dahulu
-                    </p>
-                  </div>
-                )}
-
-                {/* Done overlay */}
-                {isDone && (
-                  <div
-                    className="absolute flex items-center justify-center"
-                    style={{ top: "50%", left: "10%", width: "76%", height: "52%" }}
-                  >
-                    <div
-                      className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-lg"
-                      style={{ background: "rgba(22,163,74,0.88)", backdropFilter: "blur(2px)" }}
-                    >
-                      <span className="text-white text-xl">✓</span>
-                      <span className="text-white text-xs font-bold">Sudah Dikerjakan</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </AnimatePresence>
+          {/* Center card dipindah ke folder "meluncur" di Section 1 (Hero).
+              Folder yang sama meluncur turun ke titik ini saat scroll, jadi di
+              sini hanya disediakan ruang kosong di tengah viewport. */}
 
           {/* Next-1 — closely behind center right, clickable */}
           {hasNext1 && (
@@ -455,7 +475,7 @@ function MotionCarousel({
               className="absolute select-none cursor-pointer"
               style={{
                 width: SIDE1_W,
-                top: "5%",
+                top: "30%",
                 left: "55%",
                 transformOrigin: "bottom left",
                 zIndex: 2,
@@ -477,7 +497,7 @@ function MotionCarousel({
               className="absolute select-none cursor-pointer"
               style={{
                 width: SIDE2_W,
-                top: "9%",
+                top: "40%",
                 left: "67%",
                 transformOrigin: "bottom left",
                 zIndex: 1,
@@ -539,7 +559,7 @@ function MotionCarousel({
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.2 }}
             // PERUBAHAN: Tambahkan mt-8 (margin-top) agar tombol mepet ke bawah
-            className="mt-8" 
+            className="mt-10" 
           >
             <motion.button
               whileHover={{ scale: 1.05 }}

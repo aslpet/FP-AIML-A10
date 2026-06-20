@@ -8,8 +8,8 @@ import { fetchResult } from "@/lib/api";
 
 const VERDICT_CONFIG: Record<string, string> = {
   "Argumen Bertahan": "#22c55e",
-  "Imbang Ketat": "#f59e0b",
-  "Argumen Runtuh": "#ef4444",
+  "Imbang Ketat":     "#f59e0b",
+  "Argumen Runtuh":   "#ef4444",
 };
 
 function DonutScore({ score, color }: { score: number; color: string }) {
@@ -20,7 +20,7 @@ function DonutScore({ score, color }: { score: number; color: string }) {
   return (
     <div className="relative" style={{ width: 148, height: 148 }}>
       <svg width="148" height="148" viewBox="0 0 148 148" className="-rotate-90">
-        <circle cx="74" cy="74" r={r} fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="13" />
+        <circle cx="74" cy="74" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="13" />
         <motion.circle
           cx="74" cy="74" r={r}
           fill="none"
@@ -43,7 +43,7 @@ function DonutScore({ score, color }: { score: number; color: string }) {
         >
           {score}
         </motion.span>
-        <span className="text-xs mt-1" style={{ color: "rgba(40,15,5,0.55)" }}>
+        <span className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.35)" }}>
           dari 100
         </span>
       </div>
@@ -60,14 +60,27 @@ function ScoreBlocks({ score, max = 5 }: { score: number; max?: number }) {
           initial={{ scale: 0.4, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1 + i * 0.07, duration: 0.18 }}
-          className="rounded-md"
           style={{
-            width: "clamp(30px, 7vw, 40px)",
-            height: "clamp(30px, 7vw, 40px)",
-            background: i < score ? "#22c55e" : "rgba(40,15,5,0.18)",
+            width: "clamp(28px, 6.5vw, 38px)",
+            height: "clamp(28px, 6.5vw, 38px)",
+            borderRadius: 3,
+            background: i < score ? "#22c55e" : "rgba(40,15,5,0.15)",
+            boxShadow: i < score ? "0 2px 6px rgba(34,197,94,0.25)" : "none",
           }}
         />
       ))}
+    </div>
+  );
+}
+
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div style={{ flex: 1, height: 1, background: "rgba(59,26,6,0.22)" }} />
+      <span className="font-game tracking-widest text-xs" style={{ color: "rgba(59,26,6,0.5)" }}>
+        {label}
+      </span>
+      <div style={{ flex: 1, height: 1, background: "rgba(59,26,6,0.22)" }} />
     </div>
   );
 }
@@ -76,9 +89,9 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
   const router = useRouter();
   const { sessionId } = params;
 
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult]   = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied]   = useState(false);
   const [sharing, setSharing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -95,6 +108,7 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
         <div className="absolute inset-0">
           <Image src="/assets/background/bg-debate.svg" alt="" fill className="object-cover object-center" priority />
         </div>
+        <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 flex items-center gap-3 text-white/60 text-sm">
           <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
           <span>Menghitung hasil...</span>
@@ -104,8 +118,8 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
   }
 
   const { scores, total_score, feedback, verdict } = result;
-  const totalScore = total_score ?? 0;
-  const scoreColor = VERDICT_CONFIG[verdict] ?? (totalScore >= 70 ? "#22c55e" : totalScore >= 50 ? "#f59e0b" : "#ef4444");
+  const totalScore   = total_score ?? 0;
+  const scoreColor   = VERDICT_CONFIG[verdict] ?? (totalScore >= 70 ? "#22c55e" : totalScore >= 50 ? "#f59e0b" : "#ef4444");
   const verdictLabel = verdict ?? "";
 
   const metrics = [
@@ -128,26 +142,38 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
     if (cardRef.current) {
       try {
         const html2canvas = (await import("html2canvas")).default;
-        const canvas = await html2canvas(cardRef.current, {
-          backgroundColor: "#C8946A",
+
+        const el = cardRef.current;
+        const prevMaxHeight = el.style.maxHeight;
+        const prevOverflow  = el.style.overflow;
+        el.style.maxHeight = "none";
+        el.style.overflow  = "visible";
+        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+
+        const canvas = await html2canvas(el, {
+          backgroundColor: "#110800",
           scale: 2,
           useCORS: true,
           logging: false,
+          height: el.scrollHeight,
+          windowHeight: el.scrollHeight,
         });
+
+        el.style.maxHeight = prevMaxHeight;
+        el.style.overflow  = prevOverflow;
+
         const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
         if (blob) {
           const file = new File([blob], "hasil-debat.png", { type: "image/png" });
 
-          // 1. Native share with file (mobile, supports HTTPS)
           if (typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
             try {
               await navigator.share({ title: "debat.in", text: fallbackText, files: [file] });
               setSharing(false);
               return;
-            } catch { /* cancelled, fall through */ }
+            } catch { /* cancelled */ }
           }
 
-          // 2. Clipboard image (desktop, HTTPS only)
           if (typeof ClipboardItem !== "undefined" && window.isSecureContext) {
             try {
               await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
@@ -158,10 +184,9 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
             } catch { /* fall through */ }
           }
 
-          // 3. Auto-download PNG (works on HTTP too)
           const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
+          const a   = document.createElement("a");
+          a.href     = url;
           a.download = "hasil-debat.png";
           a.click();
           URL.revokeObjectURL(url);
@@ -170,13 +195,10 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
           setSharing(false);
           return;
         }
-      } catch { /* screenshot failed, fall through to text */ }
+      } catch { /* screenshot failed */ }
     }
 
-    // 4. Last resort: copy text
-    try {
-      await navigator.clipboard.writeText(fallbackText);
-    } catch { /* ignore */ }
+    try { await navigator.clipboard.writeText(fallbackText); } catch { /* ignore */ }
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
     setSharing(false);
@@ -184,144 +206,159 @@ export default function ResultPage({ params }: { params: { sessionId: string } }
 
   return (
     <main className="relative min-h-screen flex items-center justify-center overflow-hidden p-4">
-      {/* Arena background */}
+      {/* Background */}
       <div className="absolute inset-0">
-        <Image
-          src="/assets/background/bg-debate.svg"
-          alt=""
-          fill
-          className="object-cover object-center"
-          priority
-        />
+        <Image src="/assets/background/bg-debate.svg" alt="" fill className="object-cover object-center" priority />
       </div>
+      <div className="absolute inset-0 bg-black/50" />
 
-      {/* Top-right nav — fixed to page corner */}
+      {/* Top-right nav */}
       <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
           onClick={() => router.push(`/arena/${sessionId}`)}
-          className="cursor-pointer"
-          title="Kembali ke Chat"
+          className="cursor-pointer" title="Kembali ke Chat"
         >
-          <Image
-            src="/assets/button/button-gochat.svg"
-            alt="Go to Chat"
-            width={110}
-            height={38}
-            style={{ width: "clamp(72px, 18vw, 100px)", height: "auto" }}
-          />
+          <Image src="/assets/button/button-gochat.svg" alt="Go to Chat" width={110} height={38}
+            style={{ width: "clamp(72px, 18vw, 100px)", height: "auto" }} />
         </motion.button>
-
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
           onClick={() => router.push("/")}
-          className="cursor-pointer"
-          title="Beranda"
+          className="cursor-pointer" title="Beranda"
         >
-          <Image
-            src="/assets/button/button-backhome.svg"
-            alt="Back to Home"
-            width={110}
-            height={38}
-            style={{ width: "clamp(72px, 18vw, 100px)", height: "auto" }}
-          />
+          <Image src="/assets/button/button-backhome.svg" alt="Back to Home" width={110} height={38}
+            style={{ width: "clamp(72px, 18vw, 100px)", height: "auto" }} />
         </motion.button>
-
         <motion.button
-          whileHover={{ scale: 1.15 }}
-          whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}
           onClick={() => router.push("/")}
-          className="cursor-pointer"
-          title="Tutup"
+          className="cursor-pointer" title="Tutup"
         >
-          <Image
-            src="/assets/button/button-x.svg"
-            alt="X"
-            width={28}
-            height={28}
-            style={{ width: "clamp(20px, 5vw, 28px)", height: "auto" }}
-          />
+          <Image src="/assets/button/button-x.svg" alt="X" width={28} height={28}
+            style={{ width: "clamp(20px, 5vw, 28px)", height: "auto" }} />
         </motion.button>
       </div>
 
-      {/* Popup card */}
+      {/* ── Result card ── */}
       <motion.div
         ref={cardRef}
         initial={{ opacity: 0, scale: 0.95, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
-        className="relative z-10 w-full rounded-2xl overflow-y-auto"
+        className="relative z-10 w-full overflow-y-auto"
         style={{
-          maxWidth: 460,
-          maxHeight: "calc(100vh - 5.5rem)",
-          background: "#C8946A",
-          boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+          maxWidth: 420,
+          maxHeight: "calc(100vh - 5rem)",
+          borderRadius: 6,
+          boxShadow: "0 32px 80px rgba(0,0,0,0.75), 0 0 0 2px rgba(160,100,40,0.35)",
         }}
       >
-        {/* Main content */}
-        <div className="px-6 pb-6 space-y-5">
+        {/* ── Header — dark courtroom panel ── */}
+        <div
+          className="flex flex-col items-center gap-1 px-6 pt-6 pb-5"
+          style={{
+            background: "linear-gradient(180deg, #0D0600 0%, #2A1505 100%)",
+            borderBottom: "2px solid rgba(160,100,40,0.45)",
+          }}
+        >
+          <span className="font-game tracking-[0.35em]" style={{ color: "rgba(200,148,106,0.6)", fontSize: 12 }}>
+            debat.In
+          </span>
 
-          {/* Donut + verdict */}
-          <div className="flex flex-col items-center gap-2 pt-2">
+          <div className="mt-3">
             <DonutScore score={totalScore} color={scoreColor} />
-            <p className="text-sm font-bold" style={{ color: scoreColor }}>
-              {verdictLabel}
-            </p>
           </div>
 
-          {/* Dimension rows */}
-          <div className="space-y-4">
-            {metrics.map((m) => (
-              <div key={m.label} className="space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            className="mt-3 px-5 py-1.5"
+            style={{
+              background: scoreColor + "18",
+              border: `1px solid ${scoreColor}44`,
+              borderRadius: 3,
+            }}
+          >
+            <span className="font-game tracking-[0.2em]" style={{ color: scoreColor, fontSize: 20 }}>
+              {verdictLabel}
+            </span>
+          </motion.div>
+        </div>
+
+        {/* ── Body — parchment ── */}
+        <div className="px-5 pt-5 pb-6 space-y-4" style={{ background: "#C8946A" }}>
+
+          <SectionDivider label="RINCIAN SKOR" />
+
+          {/* Metrics */}
+          <div className="space-y-3.5">
+            {metrics.map((m, idx) => (
+              <motion.div
+                key={m.label}
+                className="space-y-1.5"
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15 + idx * 0.08 }}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold" style={{ color: "#3B1A06" }}>
+                  <span className="font-game tracking-wider" style={{ color: "#3B1A06", fontSize: 17 }}>
                     {m.label}
                   </span>
-                  <span className="text-sm font-bold text-green-700">
-                    {m.score}<span className="text-xs font-normal" style={{ color: "rgba(40,15,5,0.45)" }}>/5</span>
+                  <span className="font-game" style={{ color: "#3B1A06", fontSize: 16 }}>
+                    {m.score}
+                    <span style={{ opacity: 0.4, fontSize: 12 }}>/5</span>
                   </span>
                 </div>
                 <ScoreBlocks score={m.score} />
-              </div>
+              </motion.div>
             ))}
           </div>
 
           {/* Catatan Juri */}
           {feedback && (
-            <div
-              className="rounded-xl p-4 space-y-1.5"
-              style={{ background: "rgba(0,0,0,0.08)", border: "1px solid rgba(0,0,0,0.12)" }}
-            >
-              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#5A2808" }}>
-                Catatan Juri
-              </p>
-              <p className="text-sm leading-relaxed italic" style={{ color: "#3B1A06" }}>
-                &ldquo;{feedback}&rdquo;
-              </p>
-            </div>
+            <>
+              <SectionDivider label="CATATAN JURI" />
+              <div
+                className="rounded p-4"
+                style={{
+                  background: "rgba(0,0,0,0.08)",
+                  border: "1px solid rgba(59,26,6,0.15)",
+                  boxShadow: "inset 0 2px 6px rgba(0,0,0,0.06)",
+                }}
+              >
+                <p className="text-sm leading-relaxed italic" style={{ color: "#3B1A06" }}>
+                  &ldquo;{feedback}&rdquo;
+                </p>
+              </div>
+            </>
           )}
 
-          {/* Bagikan */}
+          {/* Share button */}
           <motion.button
             whileHover={{ scale: sharing ? 1 : 1.02 }}
             whileTap={{ scale: sharing ? 1 : 0.97 }}
             onClick={handleShare}
             disabled={sharing}
-            className="w-full py-3 rounded-xl text-sm font-bold cursor-pointer smooth-transition flex items-center justify-center gap-2"
+            className="w-full py-3 font-game tracking-[0.15em] cursor-pointer flex items-center justify-center gap-2 smooth-transition"
             style={{
-              background: copied ? "#22c55e" : "#EBD9C2",
-              color: copied ? "#052e0c" : "#3B1A06",
+              fontSize: 18,
+              background: copied
+                ? "linear-gradient(180deg, #16a34a, #15803d)"
+                : "linear-gradient(180deg, #2A1505, #0D0600)",
+              color: copied ? "#f0fdf4" : "#ffffff",
+              border: `1px solid ${copied ? "rgba(34,197,94,0.4)" : "rgba(160,100,40,0.45)"}`,
+              borderRadius: 3,
               opacity: sharing ? 0.7 : 1,
             }}
           >
             {sharing ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Menyiapkan gambar...
+                Menyiapkan...
               </>
-            ) : copied ? "Gambar tersimpan! Tinggal bagikan" : "Share (download) ^^"}
+            ) : copied ? ">> TERSIMPAN! ✓ <<" : ">> BAGIKAN <<"}
           </motion.button>
         </div>
       </motion.div>

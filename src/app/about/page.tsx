@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -12,9 +13,16 @@ const PARAGRAPHS = [
 
 export default function AboutPage() {
   const router = useRouter();
+  const [done, setDone] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  );
 
   return (
-    <main className="relative min-h-screen flex items-center justify-center overflow-y-auto">
+    <main
+      className={`relative min-h-screen ${done ? "overflow-y-auto" : "overflow-hidden"}`}
+    >
       {/* Background */}
       <div className="absolute inset-0">
         <Image
@@ -44,35 +52,79 @@ export default function AboutPage() {
         </button>
       </div>
 
-      {/* Content */}
+      {/* Fade masks atas & bawah biar teks muncul/hilang halus */}
       <div
-        className="relative z-10 text-center"
-        style={{
-          maxWidth: "min(88vw, 900px)",
-          padding: "clamp(40px, 6vh, 80px) 0",
-        }}
-      >
-        {/* Body paragraphs */}
-        <div className="space-y-0">
-          {PARAGRAPHS.map((p, i) => (
-            <p
-              key={i}
-              className="font-game text-white"
-              style={{ fontSize: "clamp(18px, 2.2vw, 28px)", lineHeight: 1.55 }}
-            >
-              {p}
-            </p>
-          ))}
-        </div>
+        className="pointer-events-none absolute inset-x-0 top-0 z-10"
+        style={{ height: "18vh", background: "linear-gradient(to bottom, rgba(20,10,2,0.85), transparent)" }}
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10"
+        style={{ height: "18vh", background: "linear-gradient(to top, rgba(20,10,2,0.85), transparent)" }}
+      />
 
-        {/* Attribution */}
-        <p
-          className="font-game text-white/60 mt-10"
-          style={{ fontSize: "clamp(14px, 1.6vw, 20px)" }}
+      {/* Credits-roll viewport */}
+      <div
+        className={`credits-viewport ${done ? "is-done" : ""} ${
+          done ? "relative min-h-screen" : "absolute inset-0 overflow-hidden"
+        } z-[5] flex justify-center`}
+      >
+        <div
+          className="credits-roll text-center"
+          onAnimationEnd={() => setDone(true)}
+          style={{ maxWidth: "min(88vw, 900px)" }}
         >
-          — Final Project AI —
-        </p>
+          <div className="space-y-6">
+            {PARAGRAPHS.map((p, i) => (
+              <p
+                key={i}
+                className="font-game text-white"
+                style={{ fontSize: "clamp(18px, 2.2vw, 28px)", lineHeight: 1.55 }}
+              >
+                {p}
+              </p>
+            ))}
+          </div>
+
+          {/* Attribution */}
+          <p
+            className="font-game text-white/60 mt-12"
+            style={{ fontSize: "clamp(14px, 1.6vw, 20px)" }}
+          >
+            — Final Project AI —
+          </p>
+        </div>
       </div>
+
+      <style jsx>{`
+        .credits-roll {
+          position: absolute;
+          top: 0;
+          padding: 14vh 0;
+          /* gulir sekali dari bawah viewport sampai berhenti di posisi baca */
+          animation: credits-scroll 22s linear forwards;
+        }
+        /* setelah selesai: konten jadi alur normal & bisa di-scroll manual */
+        .credits-viewport.is-done .credits-roll {
+          position: static;
+          transform: none;
+          animation: none;
+        }
+        @keyframes credits-scroll {
+          from {
+            transform: translateY(100vh);
+          }
+          to {
+            transform: translateY(0);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .credits-roll {
+            animation: none;
+            position: static;
+            transform: none;
+          }
+        }
+      `}</style>
     </main>
   );
 }
