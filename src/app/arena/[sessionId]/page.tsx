@@ -46,24 +46,19 @@ function ChatBubble({ role, content, userAvatar, personaImage }: { role: "ai" | 
     ? (isBig ? "/assets/chat-big.svg" : "/assets/chat-small.svg")
     : (isBig ? "/assets/chat-big(inverse).svg" : "/assets/chat-small(inverse).svg");
 
-  const dims = isBig ? { w: 917, h: 303 } : { w: 887, h: 218 };
+  // PENTING: dims = viewBox asli SVG (small 891×197, big 922×341), supaya gambar
+  // mengisi kotak overlay tanpa "letterbox" dan persentase posisi memetakan tepat.
+  const dims = isBig ? { w: 922, h: 341 } : { w: 891, h: 197 };
 
-  // Padding Left (Batas Kiri teks)
-  const pl = isAI ? (isBig ? "15%" : "16%") : (isBig ? "16%" : "8%");
-  // Padding Right (Batas Kanan teks)
-  const pr = isAI ? (isBig ? "15%" : "8%") : (isBig ? "16%" : "16%");
-  
-  // Padding Top (Jarak atas teks) — dikecilkan agar area teks lebih lega ke atas
-  const pt = isBig ? "6%" : "7%";
-  // Padding Bottom (Jarak bawah teks) — dikecilkan agar area teks lebih lega ke bawah
-  const pb = isBig ? "6%" : "7%";
-
-  // PERUBAHAN PENTING: Menentukan tinggi maksimal area teks agar tidak jebol ke bawah SVG.
-  // Nilai ini adalah persentase dari tinggi keseluruhan gambar bubble (SVG).
-  // Jika teks masih menembus ke bawah kotak hitam, KECILKAN angka persentase ini (misal: "65%", "60%").
-  // Jika area teks terasa terlalu sempit di dalam kotak hitam, BESARKAN angka ini.
-  const maxH = isBig ? "80%" : "80%";
-  // ---------------------------------------------------------------------------------
+  // Area teks diposisikan dengan INSET absolut (left/right/top/bottom), BUKAN padding.
+  // Alasan: padding-top/bottom dalam % dihitung dari LEBAR elemen — karena bubble jauh
+  // lebih lebar daripada tinggi, padding vertikal jadi raksasa & area teks kolaps (teks
+  // hilang). Dengan inset absolut, top/bottom = % TINGGI dan left/right = % LEBAR.
+  // Nilai dicocokkan ke kotak hitam tiap SVG; bubble user = cermin horizontal dari AI.
+  const left   = isAI ? (isBig ? "24%" : "29%") : (isBig ? "11%" : "14%");
+  const right  = isAI ? (isBig ? "11%" : "12%") : (isBig ? "24%" : "29%");
+  const top    = isBig ? "13%" : "17%";
+  const bottom = isBig ? "25%" : "31%";
 
   return (
     <motion.div
@@ -86,19 +81,32 @@ function ChatBubble({ role, content, userAvatar, personaImage }: { role: "ai" | 
             width: PHOTO_W,
             transform: "rotate(-4deg)",
             transformOrigin: "bottom center",
-            marginBottom: "clamp(30px, 5vw, 44px)",
+            marginBottom: "clamp(38px, 5vw, 67px)",
           }}
         >
           <div className="relative w-full" style={{ aspectRatio: "240/189" }}>
             <Image src="/assets/box-profil.svg" alt="" width={240} height={189} className="w-full h-auto drop-shadow-lg" />
             {personaImage && (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={personaImage}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover object-top"
-                style={{ clipPath: "polygon(87.05% 11.51%, 11.35% 14.32%, 29.5% 92.46%, 96.35% 75.6%)" }}
-              />
+              <div
+                className="absolute overflow-hidden"
+                style={{
+                  // 1. Mempersempit area gambar agar pas di area kotak hitam
+                  top: "1%",
+                  bottom: "7%",
+                  left: "1%",
+                  right: "1%",
+                  // 2. Memotong sudut-sudut asimetris yang tersisa
+                  clipPath: "polygon(89% 21%, 3% 11%, 10.5% 96%, 77.5% 88%)",
+                  zIndex: 1,
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={personaImage}
+                  alt=""
+                  className="w-full h-full object-cover object-top"
+                />
+              </div>
             )}
           </div>
         </div>
@@ -108,13 +116,13 @@ function ChatBubble({ role, content, userAvatar, personaImage }: { role: "ai" | 
       <div className="relative flex-1 min-w-0">
         <Image src={src} alt="" width={dims.w} height={dims.h} className="w-full h-auto block" />
         <div
-          className="absolute inset-0 flex flex-col justify-center"
-          style={{ paddingLeft: pl, paddingRight: pr, paddingTop: pt, paddingBottom: pb }}
+          className="absolute flex flex-col justify-center"
+          style={{ left, right, top, bottom }}
         >
-          {/* PERUBAHAN PENTING: Wadah inilah yang sekarang diatur tingginya dan dibuat scrollable */}
-          <div 
+          {/* Wadah teks: scrollable bila konten melebihi tinggi area (inset di atas) */}
+          <div
             className="w-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-            style={{ maxHeight: maxH }}
+            style={{ maxHeight: "100%" }}
           >
             {/* Ukuran teks chat — naikkan/turunkan di sini (mobile / sm / md).
                 Saat ini: 12px → 14px → 16px. */}
@@ -129,7 +137,13 @@ function ChatBubble({ role, content, userAvatar, personaImage }: { role: "ai" | 
       {!isAI && (
         <div
           className="flex-shrink-0"
-          style={{ width: PHOTO_W, transform: "rotate(5deg)", transformOrigin: "bottom center" }}
+          style={{ 
+            width: PHOTO_W, 
+            transform: "rotate(5deg)", 
+            transformOrigin: "bottom center",
+            // PERUBAHAN: Tambahkan baris ini agar ikut naik
+            marginBottom: "clamp(38px, 6vw, 23px)",
+          }}
         >
           <div className="relative w-full" style={{ aspectRatio: "240/189" }}>
             <Image
@@ -140,13 +154,26 @@ function ChatBubble({ role, content, userAvatar, personaImage }: { role: "ai" | 
               className="w-full h-auto drop-shadow-lg"
             />
             {userAvatar && (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={userAvatar}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ clipPath: "polygon(12.63% 11.51%, 88.34% 14.32%, 70.19% 92.46%, 3.34% 75.6%)" }}
-              />
+              <div
+                className="absolute overflow-hidden"
+                style={{
+                  // 1. Mempersempit area gambar agar pas di area kotak hitam
+                  top: "10%",
+                  bottom: "1%",
+                  left: "1%",
+                  right: "1%",
+                  // 2. Memotong sudut-sudut asimetris yang tersisa
+                  clipPath: "polygon(11% 11%, 96% 3%, 90% 89%, 23% 81%)",
+                  zIndex: 1,
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={userAvatar}
+                  alt=""
+                  className="w-full h-full object-cover object-center"
+                />
+              </div>
             )}
           </div>
         </div>
@@ -350,15 +377,28 @@ export default function ArenaPage({
             >
               <div
                 className="flex-shrink-0"
-                style={{ width: PHOTO_W, transform: "rotate(-4deg)", transformOrigin: "bottom center" }}
+                style={{ 
+                  width: PHOTO_W, 
+                  transform: "rotate(-4deg)", 
+                  transformOrigin: "bottom center",
+                  marginBottom: "clamp(38px, 6vw, 52px)",
+                }}
               >
                 <Image src="/assets/box-profil.svg" alt="" width={240} height={189} className="w-full h-auto drop-shadow-lg" />
               </div>
-              <div className="relative" style={{ width: "clamp(120px, 20vw, 220px)" }}>
-                <Image src="/assets/chat-small.svg" alt="" width={887} height={218} className="w-full h-auto" />
+
+              {/* PERUBAHAN: Tambahkan flex-shrink-0 dan nilai marginBottom yang sama di sini */}
+              <div
+                className="relative flex-shrink-0"
+                style={{
+                  width: "clamp(200px, 40vw, 420px)",
+                  marginBottom: "clamp(38px, 6vw, 52px)",
+                }}
+              >
+                <Image src="/assets/chat-small.svg" alt="" width={891} height={197} className="w-full h-auto" />
                 <div
-                  className="absolute inset-0 flex items-center"
-                  style={{ paddingLeft: "16%", paddingTop: "11%", paddingBottom: "11%" }}
+                  className="absolute flex items-center"
+                  style={{ left: "30%", right: "12%", top: "17%", bottom: "31%" }}
                 >
                   <div className="flex gap-2">
                     {[0, 1, 2].map((i) => (
