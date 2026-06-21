@@ -4,6 +4,9 @@ out/
 .env
 .env.local
 .env*.local
-*.mjs
+
+# Script files (keep next.config.mjs)
+run-pipeline.mjs
+test-*.mjs
 
 
