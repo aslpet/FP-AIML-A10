@@ -4,7 +4,7 @@
 
 ### Pelatihan Argumentasi Berbasis Gamifikasi dengan Lawan Debat AI Berpersona & Mosi Harian dari Berita
 
-Web app untuk **melatih kemampuan berargumentasi** dalam Bahasa Indonesia — beradu argumen **3 ronde** melawan AI berpersona, dengan **mosi harian** yang dikurasi otomatis dari berita terkini, lalu dinilai pada **4 dimensi** di akhir sesi. Bernuansa *daily puzzle* ala Wordle dengan estetika ruang sidang **Ace Attorney**.
+Web app untuk **melatih kemampuan berargumentasi** dalam Bahasa Indonesia — beradu argumen **3 ronde** melawan AI berpersona, dengan **mosi harian** yang dikurasi otomatis dari berita terkini, lalu dinilai pada **4 dimensi** di akhir sesi, serta disesuaikan untuk gamifikasi *daily puzzle* ala Wordle.
 
 </div>
 
@@ -68,7 +68,6 @@ Masalah yang diangkat:
 - 🔥 **Streak harian**, 🗂️ **history** skor lintas waktu, dan 📣 **share card**.
 - 🕶️ **Anonim langsung main** (auth anonim Supabase) — tanpa wajib mendaftar.
 - 🎭 **Persona showcase** — halaman info 5 gaya retorika lawan AI.
-- 🎨 Estetika **Ace Attorney courtroom** (folder berkas, speech bubble, font pixel).
 
 ---
 
@@ -137,10 +136,10 @@ src/
 │  ├─ llm/                     # gemini client + prompts (persona, evaluator)
 │  ├─ supabase/                # client, server, admin
 │  └─ config.ts, date.ts       # konfigurasi env & util tanggal (WIB)
-├─ instrumentation.ts          # cron in-app (HANYA dev/self-host; nonaktif di Vercel)
-public/assets/                 # aset visual Ace Attorney
+├─ instrumentation.ts          # cron in-app (dev/self-host)
+public/assets/                 # aset visual
 supabase/                      # migrations + seed SQL
-docs/                          # PRD/SRS/TRD & catatan desain
+docs/                          # Docs & catatan desain
 ```
 
 ---
@@ -249,9 +248,3 @@ Unit test (Vitest) mencakup logika murni di `src/lib` — agregasi skor & verdic
 ```bash
 npm test
 ```
-
----
-
-## Atribusi
-
-**Final Project AI/ML** — debat.in. Aset visual bergaya *courtroom / Ace Attorney* berada di [`public/assets`](public/assets). Seluruh interaksi dalam Bahasa Indonesia.
