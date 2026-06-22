@@ -2,6 +2,12 @@ export async function register() {
   // Only run in Node.js runtime (not Edge), and only on the server
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // On Vercel (serverless) there is no persistent process to keep node-cron
+  // alive, and register() runs on every cold start. Rely on the Vercel Cron Job
+  // (vercel.json → /api/cron/daily) instead. This in-app scheduler is only for
+  // local dev / self-hosted (long-running) deployments.
+  if (process.env.VERCEL) return;
+
   const { runDailyPipeline } = await import("@/lib/pipeline");
   const { todayWIB } = await import("@/lib/date");
   const { admin } = await import("@/lib/supabase/admin");

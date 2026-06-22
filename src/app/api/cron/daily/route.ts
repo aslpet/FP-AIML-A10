@@ -4,6 +4,9 @@ import { runDailyPipeline } from "@/lib/pipeline";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Daily pipeline ingests RSS + calls the LLM for several categories; give it
+// headroom. 60s is the maximum on Vercel Hobby (Pro allows up to 300).
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization");
